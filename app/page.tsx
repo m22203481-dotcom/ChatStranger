@@ -25,9 +25,12 @@ export default function Home() {
           No registration. No personal information. Just conversations.
         </p>
 
-        <button className="mt-10 rounded-full bg-blue-600 hover:bg-blue-700 transition px-10 py-4 text-xl font-semibold">
-          Start Chatting →
-        </button>
+        <a
+  href="/chat"
+  className="mt-10 inline-block rounded-full bg-blue-600 hover:bg-blue-700 transition px-10 py-5 text-2xl font-semibold"
+>
+  Start Chatting →
+</a>
 
       </section>
 
