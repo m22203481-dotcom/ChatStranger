@@ -1,6 +1,7 @@
-type Message = {
+export type Message = {
   text: string;
   sender: "me" | "stranger";
+  timestamp: number;
 };
 
 type ChatMessagesProps = {
@@ -28,7 +29,14 @@ export default function ChatMessages({
                 : "bg-gray-800"
             }`}
           >
-            {msg.text}
+            <div>{msg.text}</div>
+
+            <div className="text-xs text-gray-300 mt-1">
+           {new Date(msg.timestamp).toLocaleTimeString("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+})}   
+            </div>
           </div>
         </div>
       ))}
