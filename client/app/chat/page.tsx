@@ -133,14 +133,6 @@ useEffect(() => {
 
     if (e.key !== "Escape") return;
 
-
-    if (
-      statusRef.current === "Searching..."
-    ) {
-      return;
-    }
-
-
     handleNext();
 
   };
