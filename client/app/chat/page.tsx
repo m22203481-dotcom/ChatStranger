@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import ChatHeader from "@/components/ChatHeader";
 import ChatMessages, {
   Message,
@@ -19,6 +19,12 @@ export default function ChatPage() {
   const [reportReason, setReportReason] = useState("");
   const [messages, setMessages] =
     useState<Message[]>([]);
+
+const statusRef = useRef(status);
+
+useEffect(() => {
+  statusRef.current = status;
+}, [status]);
 
 
   const bottomRef =
@@ -69,82 +75,93 @@ export default function ChatPage() {
     setMessage("");
 
   };
+const handleNext = useCallback(() => {
 
-
-  const handleNext = () => {
-
-
-    if (!confirmNext) {
-
-      setConfirmNext(true);
-
-
-      setTimeout(() => {
-
-        setConfirmNext(false);
-
-      }, 3000);
-
-
-      return;
-
-    }
-
+  // If stranger disconnected, allow immediate next search
+  if (status !== "Connected") {
 
     socket.emit(
       "nextStranger"
     );
 
-
     setStatus(
       "Searching..."
     );
 
-
     setMessages([]);
 
-
     setConfirmNext(false);
+
+    return;
+  }
+
+
+  // Connected state: require confirmation
+  if (!confirmNext) {
+
+    setConfirmNext(true);
+
+    setTimeout(() => {
+      setConfirmNext(false);
+    }, 3000);
+
+    return;
+  }
+
+
+  socket.emit(
+    "nextStranger"
+  );
+
+  setStatus(
+    "Searching..."
+  );
+
+  setMessages([]);
+
+  setConfirmNext(false);
+
+}, [confirmNext, status]);
+
+
+  // ESC KEY FOR NEXT
+
+
+useEffect(() => {
+
+  const handleEscape = (e: KeyboardEvent) => {
+
+    if (e.key !== "Escape") return;
+
+
+    if (
+      statusRef.current === "Searching..."
+    ) {
+      return;
+    }
+
+
+    handleNext();
 
   };
 
 
-  // ESC KEY FOR NEXT
-  useEffect(() => {
-
-    const handleEscape = (e: KeyboardEvent) => {
-
-console.log("ESC TEST", e.key, status);
-      if (
-        e.key === "Escape" &&
-        status === "Connected"
-      ) {
-
-        handleNext();
-
-      }
-
-    };
+  window.addEventListener(
+    "keydown",
+    handleEscape
+  );
 
 
-    window.addEventListener(
+  return () => {
+    window.removeEventListener(
       "keydown",
       handleEscape
     );
+  };
 
 
-    return () => {
-
-      window.removeEventListener(
-        "keydown",
-        handleEscape
-      );
-
-    };
-
-
-  }, [status, confirmNext]);
-
+}, [handleNext]);
+ 
 
   return (
     <main className="h-screen bg-black text-white flex flex-col overflow-hidden">
