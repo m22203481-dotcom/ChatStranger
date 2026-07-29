@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import ChatHeader from "@/components/ChatHeader";
-import ChatMessages from "@/components/ChatMessages";
+import ChatMessages, {
+  Message,
+} from "@/components/ChatMessages";
 import { socket } from "@/services/socket";
 import useSocket from "@/app/hooks/useSocket";
 export default function ChatPage() {
@@ -11,23 +13,8 @@ export default function ChatPage() {
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
 
-  const [messages, setMessages] = useState([
-    {
-      text: "Hi 👋",
-      sender: "stranger" as const,
-      timestamp: Date.now(),
-    },
-    {
-      text: "Hello!",
-      sender: "me" as const,
-      timestamp: Date.now(),
-    },
-    {
-      text: "Where are you from?",
-      sender: "stranger" as const,
-      timestamp: Date.now(),
-    },
-  ]);
+  const [messages, setMessages] =
+  useState<Message[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto scroll
