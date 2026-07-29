@@ -18,8 +18,11 @@ export default function useSocket({
   useEffect(() => {
 
     socket.connect();
-    socket.emit("findStranger");
 
+socket.once("connect", () => {
+  console.log("CONNECTED:", socket.id);
+  socket.emit("findStranger");
+});
     socket.on("connect", () => {
       console.log("✅ Connected:", socket.id);
     });

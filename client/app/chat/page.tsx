@@ -9,23 +9,30 @@ import { socket } from "@/services/socket";
 import useSocket from "@/app/hooks/useSocket";
 
 export default function ChatPage() {
+
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("Searching...");
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [confirmNext, setConfirmNext] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [messages, setMessages] =
     useState<Message[]>([]);
 
+
   const bottomRef =
     useRef<HTMLDivElement>(null);
 
+
   useEffect(() => {
+
     bottomRef.current?.scrollIntoView({
       behavior: "smooth",
     });
+
   }, [messages]);
+
 
   useSocket({
     setStatus,
@@ -34,10 +41,14 @@ export default function ChatPage() {
     setIsTyping,
   });
 
+
   const sendMessage = () => {
+
     if (!message.trim()) return;
 
+
     const newMessage = message;
+
 
     setMessages((prev) => [
       ...prev,
@@ -48,13 +59,92 @@ export default function ChatPage() {
       },
     ]);
 
+
     socket.emit(
       "sendMessage",
       newMessage
     );
 
+
     setMessage("");
+
   };
+
+
+  const handleNext = () => {
+
+
+    if (!confirmNext) {
+
+      setConfirmNext(true);
+
+
+      setTimeout(() => {
+
+        setConfirmNext(false);
+
+      }, 3000);
+
+
+      return;
+
+    }
+
+
+    socket.emit(
+      "nextStranger"
+    );
+
+
+    setStatus(
+      "Searching..."
+    );
+
+
+    setMessages([]);
+
+
+    setConfirmNext(false);
+
+  };
+
+
+  // ESC KEY FOR NEXT
+  useEffect(() => {
+
+    const handleEscape = (e: KeyboardEvent) => {
+
+console.log("ESC TEST", e.key, status);
+      if (
+        e.key === "Escape" &&
+        status === "Connected"
+      ) {
+
+        handleNext();
+
+      }
+
+    };
+
+
+    window.addEventListener(
+      "keydown",
+      handleEscape
+    );
+
+
+    return () => {
+
+      window.removeEventListener(
+        "keydown",
+        handleEscape
+      );
+
+    };
+
+
+  }, [status, confirmNext]);
+
 
   return (
     <main className="h-screen bg-black text-white flex flex-col overflow-hidden">
@@ -171,25 +261,12 @@ export default function ChatPage() {
         <div className="flex gap-2 sm:gap-3">
 
           {/* NEXT BUTTON */}
-          <button
-            onClick={() => {
-
-              socket.emit(
-                "nextStranger"
-              );
-
-              setStatus(
-                "Searching..."
-              );
-
-              setMessages([]);
-
-            }}
-            className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-full text-sm font-semibold whitespace-nowrap"
-          >
-            Next
-          </button>
-
+         <button
+  onClick={handleNext}
+  className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-full text-sm font-semibold whitespace-nowrap"
+>
+  {confirmNext ? "Confirm" : "Next"}
+</button> 
 
           {/* MESSAGE INPUT */}
           <input
