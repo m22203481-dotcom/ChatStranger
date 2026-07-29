@@ -91,13 +91,12 @@ export default function registerSocketEvents(io) {
 
         // SEND MESSAGE
         socket.on("sendMessage", (message) => {
-socket.on("typing", () => {
-
+        socket.on("typing", () => {
     const room = userRooms.get(socket.id);
 
     if (!room) return;
 
-    socket.to(room).emit("typing");
+        socket.to(room).emit("strangerTyping");
 });
 
 socket.on("stopTyping", () => {
@@ -139,100 +138,142 @@ socket.on("stopTyping", () => {
         // NEXT STRANGER
         socket.on("nextStranger", () => {
 
-            console.log(
-                "NEXT REQUEST:",
-                socket.id
+    console.log(
+        "NEXT REQUEST:",
+        socket.id
+    );
+
+
+    const oldRoom =
+        userRooms.get(socket.id);
+
+
+    if (oldRoom) {
+
+        socket
+            .to(oldRoom)
+            .emit(
+                "strangerDisconnected"
             );
 
-            const room =
-                userRooms.get(socket.id);
 
-            if (room) {
+        const roomData =
+            getRoom(oldRoom);
 
-                socket
-                    .to(room)
-                    .emit(
-                        "strangerDisconnected"
-                    );
 
-                const roomData =
-                    getRoom(room);
+        if (roomData) {
 
-                if (roomData) {
-                    roomData.users.forEach(
-                        (user) => {
-                            userRooms.delete(user);
-                        }
-                    );
+            roomData.users.forEach(
+                (user) => {
+
+                    userRooms.delete(user);
+
                 }
-
-                removeRoom(room);
-            }
-
-            removeFromQueue(socket.id);
-
-            addToQueue(socket.id);
-
-            const pair = getNextPair();
-
-            console.log(
-                "NEXT PAIR:",
-                pair
             );
 
-            if (!pair) {
-                socket.emit("waiting");
-                return;
+        }
+
+
+        removeRoom(oldRoom);
+
+    }
+
+
+    removeFromQueue(socket.id);
+
+
+    addToQueue(socket.id);
+
+
+    socket.emit(
+        "waiting"
+    );
+
+
+    const pair =
+        getNextPair();
+
+
+    console.log(
+        "NEXT PAIR:",
+        pair
+    );
+
+
+    if (!pair) {
+        return;
+    }
+
+
+    const [user1, user2] = pair;
+
+
+    const newRoom =
+        createRoom(
+            user1,
+            user2
+        );
+
+
+    userRooms.set(
+        user1,
+        newRoom
+    );
+
+
+    userRooms.set(
+        user2,
+        newRoom
+    );
+
+
+    const socket1 =
+        io.sockets.sockets.get(user1);
+
+
+    const socket2 =
+        io.sockets.sockets.get(user2);
+
+
+
+    if (socket1) {
+
+        socket1.join(newRoom);
+
+        socket1.emit(
+            "matched",
+            {
+                room: newRoom
             }
+        );
 
-            const [user1, user2] = pair;
+    }
 
-            const newRoom =
-                createRoom(
-                    user1,
-                    user2
-                );
 
-            userRooms.set(
-                user1,
-                newRoom
-            );
 
-            userRooms.set(
-                user2,
-                newRoom
-            );
+    if (socket2) {
 
-            const socket1 =
-                io.sockets.sockets.get(user1);
+        socket2.join(newRoom);
 
-            const socket2 =
-                io.sockets.sockets.get(user2);
-
-            if (socket1) {
-                socket1.join(newRoom);
-                socket1.emit(
-                    "matched",
-                    { room: newRoom }
-                );
+        socket2.emit(
+            "matched",
+            {
+                room: newRoom
             }
+        );
 
-            if (socket2) {
-                socket2.join(newRoom);
-                socket2.emit(
-                    "matched",
-                    { room: newRoom }
-                );
-            }
+    }
 
-            console.log(
-                "NEXT MATCHED:",
-                user1,
-                user2,
-                newRoom
-            );
-        });
 
+
+    console.log(
+        "NEXT MATCHED:",
+        user1,
+        user2,
+        newRoom
+    );
+
+});
         // DISCONNECT
         socket.on("disconnect", () => {
 
