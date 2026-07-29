@@ -63,8 +63,7 @@ export default function useSocket({
 
     // FIXED: server sends strangerTyping
     socket.on(
-      "strangerTyping",
-      ()=>{
+      "strangerTyping",()=>{
         setIsTyping(true);
 
         setTimeout(()=>{
@@ -82,7 +81,7 @@ export default function useSocket({
 
         setMessages([]);
 
-        setStatus("Searching...");
+        setStatus("Stranger disconnected");
 
       }
     );
