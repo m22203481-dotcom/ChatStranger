@@ -163,6 +163,50 @@ socket.on("sendMessage", (message) => {
                     { message }
                 );
         });
+// REPORT USER
+socket.on("reportUser", () => {
+
+    const room =
+        userRooms.get(socket.id);
+
+    console.log(
+        "USER REPORT:",
+        socket.id,
+        "ROOM:",
+        room
+    );
+
+    if (!room) {
+        return;
+    }
+
+    const roomData =
+        getRoom(room);
+
+
+    if (roomData) {
+
+        const reportedUser =
+            roomData.users.find(
+                (user) =>
+                    user !== socket.id
+            );
+
+
+        console.log(
+            "REPORTED USER:",
+            reportedUser
+        );
+
+    }
+
+
+    socket.emit(
+        "reportSubmitted"
+    );
+
+});
+
 
         // NEXT STRANGER
         socket.on("nextStranger", () => {

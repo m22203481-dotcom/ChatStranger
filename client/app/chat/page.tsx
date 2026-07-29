@@ -7,6 +7,7 @@ import ChatMessages, {
 } from "@/components/ChatMessages";
 import { socket } from "@/services/socket";
 import useSocket from "@/app/hooks/useSocket";
+
 export default function ChatPage() {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("Searching...");
@@ -14,103 +15,139 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = useState(false);
 
   const [messages, setMessages] =
-  useState<Message[]>([]);
-  const bottomRef = useRef<HTMLDivElement>(null);
+    useState<Message[]>([]);
 
-  // Auto scroll
+  const bottomRef =
+    useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
       behavior: "smooth",
     });
   }, [messages]);
 
-useSocket({
-  setStatus,
-  setMessages,
-  setOnlineUsers,
-  setIsTyping,
-});
+  useSocket({
+    setStatus,
+    setMessages,
+    setOnlineUsers,
+    setIsTyping,
+  });
 
- const sendMessage = () => {
-  console.log("Send button clicked");
-  if (!message.trim()) return;
+  const sendMessage = () => {
+    if (!message.trim()) return;
 
-  const newMessage = message;
+    const newMessage = message;
 
-  setMessages((prev) => [
-    ...prev,
-    {
-  text: newMessage,
-  sender: "me" as const,
-  timestamp: Date.now(),
-}
-  ]);
-console.log("Socket connected?", socket.connected);
-console.log("Socket ID:", socket.id);
-  socket.emit("sendMessage", newMessage);
+    setMessages((prev) => [
+      ...prev,
+      {
+        text: newMessage,
+        sender: "me",
+        timestamp: Date.now(),
+      },
+    ]);
 
-  setMessage("");
-};
+    socket.emit(
+      "sendMessage",
+      newMessage
+    );
+
+    setMessage("");
+  };
+
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col">
-     <ChatHeader
-  status={status}
-  onlineUsers={onlineUsers}
-/>
-<ChatMessages messages={messages} />
+    <main className="h-screen bg-black text-white flex flex-col overflow-hidden">
+      <ChatHeader
+        status={status}
+        onlineUsers={onlineUsers}
+      />
 
-<div ref={bottomRef}></div>
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <ChatMessages
+          messages={messages}
+        />
 
-{isTyping && (
-  <div className="px-4 py-2 text-sm text-gray-400">
-    Stranger is typing...
-  </div>
-)}
+        <div ref={bottomRef}></div>
 
-<footer className="border-t border-gray-800 p-4">
-        <div className="flex gap-3">
+        {isTyping && (
+          <div className="px-4 pb-2 text-sm text-gray-400">
+            Stranger is typing...
+          </div>
+        )}
+      </div>
+
+      <footer className="border-t border-gray-800 p-3 sm:p-4">
+        <div className="flex gap-2 sm:gap-3">
           <input
             value={message}
-          onChange={(e) => {
-  setMessage(e.target.value);
+            onChange={(e) => {
+              setMessage(
+                e.target.value
+              );
 
-  socket.emit("typing");
+              socket.emit("typing");
 
-  clearTimeout((window as any).typingTimer);
+              clearTimeout(
+                (window as any)
+                  .typingTimer
+              );
 
-  (window as any).typingTimer = setTimeout(() => {
-    socket.emit("stopTyping");
-  }, 1000);
-}}
+              (
+                window as any
+              ).typingTimer =
+                setTimeout(() => {
+                  socket.emit(
+                    "stopTyping"
+                  );
+                }, 1000);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 sendMessage();
               }
             }}
             placeholder="Type a message..."
-            className="flex-1 rounded-full bg-gray-900 px-5 py-3 outline-none"
+            className="flex-1 rounded-full bg-gray-900 px-4 py-3 outline-none"
           />
 
           <button
-  onClick={sendMessage}
-  className="bg-blue-600 hover:bg-blue-700 px-6 rounded-full font-semibold"
->
-  Send
-</button>
-<button
+            onClick={sendMessage}
+            className="bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-full font-semibold whitespace-nowrap"
+          >
+            Send
+          </button>
+
+          <button
+            onClick={() => {
+              socket.emit(
+                "nextStranger"
+              );
+
+              setStatus(
+                "Searching..."
+              );
+              setMessages([]);
+            }}
+            className="bg-red-600 hover:bg-red-700 px-5 py-3 rounded-full font-semibold whitespace-nowrap"
+          >
+            Next
+          </button>
+          <button
   onClick={() => {
-    console.log("Next Stranger");
 
-    socket.emit("nextStranger");
+    socket.emit(
+      "reportUser"
+    );
 
-    setStatus("Searching...");
-    setMessages([]);
+    alert(
+      "User reported"
+    );
+
   }}
-  className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-full font-semibold"
+  className="bg-yellow-600 hover:bg-yellow-700 px-5 py-3 rounded-full font-semibold whitespace-nowrap"
 >
-  Next
+  Report
 </button>
-
         </div>
       </footer>
     </main>
