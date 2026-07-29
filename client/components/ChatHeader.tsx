@@ -31,14 +31,13 @@ export default function ChatHeader({
         >
           ● {status}
         </div>
-
-        <button
-          onClick={onReport}
-          className="text-red-500 hover:text-red-400 text-lg transition"
-          title="Report User"
-        >
-          🚩
-        </button>
+<button
+  onClick={onReport}
+  className="bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded-full text-sm font-semibold transition"
+>
+  Report
+</button>
+       
       </div>
     </header>
   );
