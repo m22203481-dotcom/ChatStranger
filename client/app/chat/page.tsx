@@ -13,7 +13,8 @@ export default function ChatPage() {
   const [status, setStatus] = useState("Searching...");
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
-
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState("");
   const [messages, setMessages] =
     useState<Message[]>([]);
 
@@ -75,7 +76,85 @@ export default function ChatPage() {
           </div>
         )}
       </div>
+{showReport && (
+  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
 
+    <div className="bg-gray-900 rounded-2xl p-6 w-80">
+
+      <h2 className="text-xl font-bold mb-4">
+        Report User
+      </h2>
+
+      <div className="space-y-3">
+
+        {[
+          "Spam",
+          "Harassment",
+          "Inappropriate Content",
+          "Other",
+        ].map((reason) => (
+          <label
+            key={reason}
+            className="flex gap-3 items-center"
+          >
+            <input
+              type="radio"
+              name="report"
+              value={reason}
+              onChange={() =>
+                setReportReason(reason)
+              }
+            />
+
+            {reason}
+          </label>
+        ))}
+
+      </div>
+
+
+      <div className="flex gap-3 mt-6">
+
+        <button
+          onClick={() => {
+            setShowReport(false);
+            setReportReason("");
+          }}
+          className="flex-1 bg-gray-700 rounded-full py-2"
+        >
+          Cancel
+        </button>
+
+
+        <button
+          onClick={() => {
+
+            if (!reportReason) return;
+
+
+            socket.emit(
+              "reportUser",
+              {
+                reason: reportReason,
+              }
+            );
+
+
+            setShowReport(false);
+            setReportReason("");
+
+          }}
+          className="flex-1 bg-yellow-600 rounded-full py-2"
+        >
+          Submit
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+)}
       <footer className="border-t border-gray-800 p-3 sm:p-4">
         <div className="flex gap-2 sm:gap-3">
           <input
@@ -132,17 +211,9 @@ export default function ChatPage() {
           >
             Next
           </button>
-          <button
+         <button
   onClick={() => {
-
-    socket.emit(
-      "reportUser"
-    );
-
-    alert(
-      "User reported"
-    );
-
+    setShowReport(true);
   }}
   className="bg-yellow-600 hover:bg-yellow-700 px-5 py-3 rounded-full font-semibold whitespace-nowrap"
 >

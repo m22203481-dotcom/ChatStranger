@@ -164,29 +164,28 @@ socket.on("sendMessage", (message) => {
                 );
         });
 // REPORT USER
-socket.on("reportUser", () => {
+// REPORT USER
+socket.on("reportUser", ({ reason }) => {
 
     const room =
         userRooms.get(socket.id);
 
-    console.log(
-        "USER REPORT:",
-        socket.id,
-        "ROOM:",
-        room
-    );
 
     if (!room) {
         return;
     }
 
+
     const roomData =
         getRoom(room);
 
 
+    let reportedUser = null;
+
+
     if (roomData) {
 
-        const reportedUser =
+        reportedUser =
             roomData.users.find(
                 (user) =>
                     user !== socket.id
@@ -194,9 +193,32 @@ socket.on("reportUser", () => {
 
 
         console.log(
-            "REPORTED USER:",
-            reportedUser
+            "REPORT:",
+            {
+                reporter: socket.id,
+                reportedUser,
+                reason
+            }
         );
+
+
+        if (reportedUser) {
+
+            const reportedSocket =
+                io.sockets.sockets.get(
+                    reportedUser
+                );
+
+
+            if (reportedSocket) {
+
+                reportedSocket.emit(
+                    "strangerDisconnected"
+                );
+
+            }
+
+        }
 
     }
 
@@ -204,6 +226,27 @@ socket.on("reportUser", () => {
     socket.emit(
         "reportSubmitted"
     );
+
+
+    socket.emit(
+        "strangerDisconnected"
+    );
+
+
+    if (roomData) {
+
+        roomData.users.forEach(
+            (user) => {
+
+                userRooms.delete(user);
+
+            }
+        );
+
+    }
+
+
+    removeRoom(room);
 
 });
 
