@@ -192,7 +192,7 @@ export default function ChatPage() {
 
           <button
             onClick={sendMessage}
-            className="bg-blue-600 hover:bg-blue-700 px-5 py-3 rounded-full font-semibold whitespace-nowrap"
+            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap"
           >
             Send
           </button>
@@ -208,7 +208,7 @@ export default function ChatPage() {
               );
               setMessages([]);
             }}
-            className="bg-red-600 hover:bg-red-700 px-5 py-3 rounded-full font-semibold whitespace-nowrap"
+            className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-full text-sm font-semibold whitespace-nowrap"
           >
             Next
           </button>
