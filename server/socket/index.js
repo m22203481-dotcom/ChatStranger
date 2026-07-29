@@ -89,9 +89,7 @@ export default function registerSocketEvents(io) {
             );
         });
 
-        // SEND MESSAGE
-        socket.on("sendMessage", (message) => {
-        // TYPING
+     // TYPING
 socket.on("typing", () => {
 
     const room = userRooms.get(socket.id);
@@ -136,52 +134,21 @@ socket.on("sendMessage", (message) => {
         );
 
 });
-            console.log(
-                "MESSAGE RECEIVED:",
-                socket.id,
-                message
-            );
 
-            const room =
-                userRooms.get(socket.id);
-
-            console.log(
-                "Message:",
-                socket.id,
-                room,
-                message
-            );
-
-            if (!room) {
-                return;
-            }
-
-            socket
-                .to(room)
-                .emit(
-                    "receiveMessage",
-                    { message }
-                );
-        });
-// REPORT USER
 // REPORT USER
 socket.on("reportUser", ({ reason }) => {
 
     const room =
         userRooms.get(socket.id);
 
-
     if (!room) {
         return;
     }
 
-
     const roomData =
         getRoom(room);
 
-
     let reportedUser = null;
-
 
     if (roomData) {
 
@@ -190,7 +157,6 @@ socket.on("reportUser", ({ reason }) => {
                 (user) =>
                     user !== socket.id
             );
-
 
         console.log(
             "REPORT:",
@@ -201,14 +167,12 @@ socket.on("reportUser", ({ reason }) => {
             }
         );
 
-
         if (reportedUser) {
 
             const reportedSocket =
                 io.sockets.sockets.get(
                     reportedUser
                 );
-
 
             if (reportedSocket) {
 
@@ -222,16 +186,13 @@ socket.on("reportUser", ({ reason }) => {
 
     }
 
-
     socket.emit(
         "reportSubmitted"
     );
 
-
     socket.emit(
         "strangerDisconnected"
     );
-
 
     if (roomData) {
 
@@ -245,11 +206,9 @@ socket.on("reportUser", ({ reason }) => {
 
     }
 
-
     removeRoom(room);
 
 });
-
 
         // NEXT STRANGER
         socket.on("nextStranger", () => {
