@@ -91,12 +91,15 @@ export default function registerSocketEvents(io) {
 
         // SEND MESSAGE
         socket.on("sendMessage", (message) => {
-        socket.on("typing", () => {
+        // TYPING
+socket.on("typing", () => {
+
     const room = userRooms.get(socket.id);
 
     if (!room) return;
 
-        socket.to(room).emit("strangerTyping");
+    socket.to(room).emit("strangerTyping");
+
 });
 
 socket.on("stopTyping", () => {
@@ -106,6 +109,32 @@ socket.on("stopTyping", () => {
     if (!room) return;
 
     socket.to(room).emit("stopTyping");
+
+});
+
+// SEND MESSAGE
+socket.on("sendMessage", (message) => {
+
+    console.log(
+        "MESSAGE RECEIVED:",
+        socket.id,
+        message
+    );
+
+    const room =
+        userRooms.get(socket.id);
+
+    if (!room) {
+        return;
+    }
+
+    socket
+        .to(room)
+        .emit(
+            "receiveMessage",
+            { message }
+        );
+
 });
             console.log(
                 "MESSAGE RECEIVED:",
