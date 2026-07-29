@@ -173,12 +173,32 @@ useEffect(() => {
         <div ref={bottomRef}></div>
 
         {isTyping && (
-          <div className="px-4 pb-2 text-sm text-gray-400">
-            Stranger is typing...
-          </div>
-        )}
+  <div className="px-4 pb-2 text-sm text-gray-400">
+    Stranger is typing...
+  </div>
+)}
 
-      </div>
+<div className="px-4 pb-2 text-sm font-medium">
+  {status === "Connected" && (
+    <span className="text-green-400">
+      🟢 Connected
+    </span>
+  )}
+
+  {status === "Searching..." && (
+    <span className="text-yellow-400">
+      🔍 Searching for stranger...
+    </span>
+  )}
+
+  {status === "Stranger disconnected" && (
+    <span className="text-red-400">
+      🔴 Stranger disconnected
+    </span>
+  )}
+</div>
+
+</div>
 
 
       {showReport && (
