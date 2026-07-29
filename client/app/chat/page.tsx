@@ -58,13 +58,15 @@ export default function ChatPage() {
 
   return (
     <main className="h-screen bg-black text-white flex flex-col overflow-hidden">
+
       <ChatHeader
-  status={status}
-  onlineUsers={onlineUsers}
-  onReport={() => setShowReport(true)}
-/>
+        status={status}
+        onlineUsers={onlineUsers}
+        onReport={() => setShowReport(true)}
+      />
 
       <div className="flex-1 overflow-hidden flex flex-col">
+
         <ChatMessages
           messages={messages}
         />
@@ -76,129 +78,102 @@ export default function ChatPage() {
             Stranger is typing...
           </div>
         )}
-      </div>
-{showReport && (
-  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-
-    <div className="bg-gray-900 rounded-2xl p-6 w-80">
-
-      <h2 className="text-xl font-bold mb-4">
-        Report User
-      </h2>
-
-      <div className="space-y-3">
-
-        {[
-          "Spam",
-          "Harassment",
-          "Inappropriate Content",
-          "Other",
-        ].map((reason) => (
-          <label
-            key={reason}
-            className="flex gap-3 items-center"
-          >
-            <input
-              type="radio"
-              name="report"
-              value={reason}
-              onChange={() =>
-                setReportReason(reason)
-              }
-            />
-
-            {reason}
-          </label>
-        ))}
 
       </div>
 
 
-      <div className="flex gap-3 mt-6">
+      {showReport && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
 
-        <button
-          onClick={() => {
-            setShowReport(false);
-            setReportReason("");
-          }}
-          className="flex-1 bg-gray-700 rounded-full py-2"
-        >
-          Cancel
-        </button>
+          <div className="bg-gray-900 rounded-2xl p-6 w-80">
+
+            <h2 className="text-xl font-bold mb-4">
+              Report User
+            </h2>
 
 
-        <button
-          onClick={() => {
+            <div className="space-y-3">
 
-            if (!reportReason) return;
+              {[
+                "Spam",
+                "Harassment",
+                "Inappropriate Content",
+                "Other",
+              ].map((reason) => (
+
+                <label
+                  key={reason}
+                  className="flex gap-3 items-center"
+                >
+
+                  <input
+                    type="radio"
+                    name="report"
+                    value={reason}
+                    onChange={() =>
+                      setReportReason(reason)
+                    }
+                  />
+
+                  {reason}
+
+                </label>
+
+              ))}
+
+            </div>
 
 
-            socket.emit(
-              "reportUser",
-              {
-                reason: reportReason,
-              }
-            );
+            <div className="flex gap-3 mt-6">
+
+              <button
+                onClick={() => {
+                  setShowReport(false);
+                  setReportReason("");
+                }}
+                className="flex-1 bg-gray-700 rounded-full py-2"
+              >
+                Cancel
+              </button>
 
 
-            setShowReport(false);
-            setReportReason("");
+              <button
+                onClick={() => {
 
-          }}
-          className="flex-1 bg-yellow-600 rounded-full py-2"
-        >
-          Submit
-        </button>
+                  if (!reportReason) return;
 
-      </div>
-
-    </div>
-
-  </div>
-)}
-      <footer className="border-t border-gray-800 p-3 sm:p-4">
-        <div className="flex gap-2 sm:gap-3">
-          <input
-            value={message}
-            onChange={(e) => {
-              setMessage(
-                e.target.value
-              );
-
-              socket.emit("typing");
-
-              clearTimeout(
-                (window as any)
-                  .typingTimer
-              );
-
-              (
-                window as any
-              ).typingTimer =
-                setTimeout(() => {
                   socket.emit(
-                    "stopTyping"
+                    "reportUser",
+                    {
+                      reason: reportReason,
+                    }
                   );
-                }, 1000);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                sendMessage();
-              }
-            }}
-            placeholder="Type a message..."
-            className="flex-1 rounded-full bg-gray-900 px-4 py-3 outline-none"
-          />
 
-          <button
-            onClick={sendMessage}
-            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap"
-          >
-            Send
-          </button>
+                  setShowReport(false);
+                  setReportReason("");
 
+                }}
+                className="flex-1 bg-yellow-600 rounded-full py-2"
+              >
+                Submit
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+
+      <footer className="border-t border-gray-800 p-3 sm:p-4">
+
+        <div className="flex gap-2 sm:gap-3">
+
+          {/* NEXT BUTTON */}
           <button
             onClick={() => {
+
               socket.emit(
                 "nextStranger"
               );
@@ -206,15 +181,73 @@ export default function ChatPage() {
               setStatus(
                 "Searching..."
               );
+
               setMessages([]);
+
             }}
             className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-full text-sm font-semibold whitespace-nowrap"
           >
             Next
           </button>
-         
+
+
+          {/* MESSAGE INPUT */}
+          <input
+            value={message}
+            onChange={(e) => {
+
+              setMessage(
+                e.target.value
+              );
+
+              socket.emit("typing");
+
+
+              clearTimeout(
+                (window as any)
+                  .typingTimer
+              );
+
+
+              (
+                window as any
+              ).typingTimer =
+                setTimeout(() => {
+
+                  socket.emit(
+                    "stopTyping"
+                  );
+
+                }, 1000);
+
+            }}
+
+            onKeyDown={(e) => {
+
+              if (e.key === "Enter") {
+                sendMessage();
+              }
+
+            }}
+
+            placeholder="Type a message..."
+
+            className="flex-1 rounded-full bg-gray-900 px-4 py-3 outline-none"
+          />
+
+
+          {/* SEND BUTTON */}
+          <button
+            onClick={sendMessage}
+            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap"
+          >
+            Send
+          </button>
+
         </div>
+
       </footer>
+
     </main>
   );
 }
