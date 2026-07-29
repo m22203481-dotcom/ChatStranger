@@ -33,7 +33,12 @@ export default function ChatHeader({
         </div>
 <button
   onClick={onReport}
-  className="bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded-full text-sm font-semibold transition"
+  disabled={status !== "Connected"}
+  className={`px-3 py-1 rounded-full text-sm font-semibold transition ${
+    status === "Connected"
+      ? "bg-yellow-600 hover:bg-yellow-700"
+      : "bg-gray-700 cursor-not-allowed text-gray-400"
+  }`}
 >
   Report
 </button>

@@ -193,7 +193,8 @@ export default function ChatPage() {
 
           {/* MESSAGE INPUT */}
           <input
-            value={message}
+  disabled={status !== "Connected"}
+  value={message}
             onChange={(e) => {
 
               setMessage(
@@ -224,13 +225,20 @@ export default function ChatPage() {
 
             onKeyDown={(e) => {
 
-              if (e.key === "Enter") {
-                sendMessage();
-              }
+            if (
+  e.key === "Enter" &&
+  status === "Connected"
+) {
+  sendMessage();
+}  
 
             }}
 
-            placeholder="Type a message..."
+           placeholder={
+  status === "Connected"
+    ? "Type a message..."
+    : "Waiting for stranger..."
+} 
 
             className="flex-1 rounded-full bg-gray-900 px-4 py-3 outline-none"
           />
@@ -238,11 +246,16 @@ export default function ChatPage() {
 
           {/* SEND BUTTON */}
           <button
-            onClick={sendMessage}
-            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap"
-          >
-            Send
-          </button>
+  onClick={sendMessage}
+  disabled={status !== "Connected"}
+  className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap ${
+    status === "Connected"
+      ? "bg-blue-600 hover:bg-blue-700"
+      : "bg-gray-700 cursor-not-allowed"
+  }`}
+>
+  Send
+</button>
 
         </div>
 
