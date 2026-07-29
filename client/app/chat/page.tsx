@@ -59,9 +59,10 @@ export default function ChatPage() {
   return (
     <main className="h-screen bg-black text-white flex flex-col overflow-hidden">
       <ChatHeader
-        status={status}
-        onlineUsers={onlineUsers}
-      />
+  status={status}
+  onlineUsers={onlineUsers}
+  onReport={() => setShowReport(true)}
+/>
 
       <div className="flex-1 overflow-hidden flex flex-col">
         <ChatMessages
@@ -211,14 +212,7 @@ export default function ChatPage() {
           >
             Next
           </button>
-         <button
-  onClick={() => {
-    setShowReport(true);
-  }}
-  className="bg-yellow-600 hover:bg-yellow-700 px-5 py-3 rounded-full font-semibold whitespace-nowrap"
->
-  Report
-</button>
+         
         </div>
       </footer>
     </main>

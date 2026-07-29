@@ -1,11 +1,13 @@
 type ChatHeaderProps = {
   status: string;
   onlineUsers: number;
+  onReport: () => void;
 };
 
 export default function ChatHeader({
   status,
   onlineUsers,
+  onReport,
 }: ChatHeaderProps) {
   return (
     <header className="border-b border-gray-800 px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-2">
@@ -29,6 +31,14 @@ export default function ChatHeader({
         >
           ● {status}
         </div>
+
+        <button
+          onClick={onReport}
+          className="text-red-500 hover:text-red-400 text-lg transition"
+          title="Report User"
+        >
+          🚩
+        </button>
       </div>
     </header>
   );
