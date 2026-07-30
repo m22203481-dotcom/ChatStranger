@@ -1,17 +1,24 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import ChatHeader from "@/components/ChatHeader";
 import ChatMessages, {
   Message,
 } from "@/components/ChatMessages";
 import { socket } from "@/services/socket";
 import useSocket from "@/app/hooks/useSocket";
-
+import { signOut } from "next-auth/react";
 export default function ChatPage() {
-
+const { data: session, status: authStatus } =
+  useSession();
+ 
+const router = useRouter();
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("Searching...");
+  const [showProfileMenu, setShowProfileMenu] =
+  useState(false);
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const [showReport, setShowReport] = useState(false);
@@ -30,6 +37,15 @@ useEffect(() => {
   const bottomRef =
     useRef<HTMLDivElement>(null);
 
+useEffect(() => {
+
+  if (authStatus === "unauthenticated") {
+
+    router.replace("/login");
+
+  }
+
+}, [authStatus, router]);
 
   useEffect(() => {
 
@@ -97,6 +113,8 @@ const handleNext = useCallback(() => {
 
 
   // Connected state: require confirmation
+
+  
   if (!confirmNext) {
 
     setConfirmNext(true);
@@ -154,15 +172,36 @@ useEffect(() => {
 
 }, [handleNext]);
  
+if (authStatus === "loading") {
 
+  return (
+
+    <main className="h-screen bg-black text-white flex items-center justify-center">
+
+      Loading...
+
+    </main>
+
+  );
+
+}
+if (!session) {
+
+  return null;
+
+}
   return (
     <main className="h-screen bg-black text-white flex flex-col overflow-hidden">
 
-      <ChatHeader
-        status={status}
-        onlineUsers={onlineUsers}
-        onReport={() => setShowReport(true)}
-      />
+     <ChatHeader
+  status={status}
+  onlineUsers={onlineUsers}
+  onReport={() => setShowReport(true)}
+  session={session}
+  onProfileClick={() =>
+    setShowProfileMenu(true)
+  }
+/> 
 
       <div className="flex-1 overflow-hidden flex flex-col">
 
@@ -200,7 +239,66 @@ useEffect(() => {
 
 </div>
 
+{showProfileMenu && (
+  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
 
+<div className="bg-gray-900 rounded-2xl p-6 w-80 border border-gray-800 relative flex flex-col min-h-[420px">
+  <button
+  onClick={() =>
+    setShowProfileMenu(false)
+  }
+  className="absolute top-3 right-4 text-gray-400 hover:text-white text-xl"
+>
+  ✕
+</button>
+      <div className="flex flex-col items-center mb-6">
+
+        <img
+  src={session?.user?.image || "/default-avatar.png"}
+  alt="Profile"
+  className="w-20 h-20 rounded-full border border-gray-700 mb-3"
+/>
+
+        <h2 className="font-bold text-lg">
+          {session?.user?.name}
+        </h2>
+
+        <p className="text-sm text-gray-400 text-center break-all">
+          {session?.user?.email}
+        </p>
+
+      </div>
+
+      
+
+      <button
+        disabled
+        className="w-full bg-gray-700 py-3 rounded-xl mb-3 text-gray-400"
+      >
+        Coming Soon
+      </button>
+
+      <button
+        disabled
+        className="w-full bg-gray-700 py-3 rounded-xl text-gray-400"
+      >
+        Coming Soon
+      </button>
+<button
+  onClick={() =>
+    signOut({
+      callbackUrl: "/login",
+    })
+  }
+  className="w-full bg-red-600 hover:bg-red-700 py-2 rounded-xl mt-4 font-semibold"
+>
+  Logout
+</button>
+
+    </div>
+
+  </div>
+)}
       {showReport && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
 
@@ -276,7 +374,9 @@ useEffect(() => {
               >
                 Submit
               </button>
-
+<button onClick={() => signOut()}>
+  Logout
+</button>
             </div>
 
           </div>
@@ -290,6 +390,8 @@ useEffect(() => {
         <div className="flex gap-2 sm:gap-3">
 
           {/* NEXT BUTTON */}
+
+
          <button
   onClick={handleNext}
   className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-full text-sm font-semibold whitespace-nowrap"
@@ -298,6 +400,8 @@ useEffect(() => {
 </button> 
 
           {/* MESSAGE INPUT */}
+
+
           <input
   disabled={status !== "Connected"}
   value={message}
@@ -362,6 +466,7 @@ useEffect(() => {
 >
   Send
 </button>
+
 
         </div>
 
