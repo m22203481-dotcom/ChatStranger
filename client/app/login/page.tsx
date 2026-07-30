@@ -43,6 +43,22 @@ export default function LoginPage() {
         >
           Continue with Google
         </button>
+        <p className="text-xs text-gray-400 text-center mt-4 max-w-sm">
+  By continuing, you agree to our{" "}
+  <a
+    href="/terms"
+    className="text-blue-400 hover:underline"
+  >
+    Terms of Service
+  </a>{" "}
+  and{" "}
+  <a
+    href="/privacy"
+    className="text-blue-400 hover:underline"
+  >
+    Privacy Policy
+  </a>.
+</p>
       </div>
     </main>
   );
