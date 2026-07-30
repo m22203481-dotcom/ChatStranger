@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 export type Message = {
   text: string;
   sender: "me" | "stranger";
@@ -11,6 +13,14 @@ type ChatMessagesProps = {
 export default function ChatMessages({
   messages,
 }: ChatMessagesProps) {
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [messages]);
+
   return (
     <section className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 min-h-0">
       {messages.map((msg, index) => (
@@ -40,6 +50,8 @@ export default function ChatMessages({
           </div>
         </div>
       ))}
+
+      <div ref={bottomRef} />
     </section>
   );
 }

@@ -34,8 +34,7 @@ useEffect(() => {
 }, [status]);
 
 
-  const bottomRef =
-    useRef<HTMLDivElement>(null);
+  
 
 useEffect(() => {
 
@@ -47,14 +46,7 @@ useEffect(() => {
 
 }, [authStatus, router]);
 
-  useEffect(() => {
-
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
-
-  }, [messages]);
-
+  
 
   useSocket({
     setStatus,
@@ -213,7 +205,7 @@ if (!session) {
           messages={messages}
         />
 
-        <div ref={bottomRef}></div>
+        
 
         {isTyping && (
   <div className="px-4 pb-2 text-sm text-gray-400">
