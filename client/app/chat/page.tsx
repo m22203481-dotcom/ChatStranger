@@ -201,9 +201,28 @@ if (!session) {
 
      <div className="flex-1 flex flex-col min-h-0"> 
 
-        <ChatMessages
-          messages={messages}
-        />
+    {messages.length === 0 && status === "Searching..." ? (
+  <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+
+    <div className="text-6xl mb-6">
+      🔍
+    </div>
+
+    <h2 className="text-2xl font-bold">
+      Looking for someone to chat with
+    </h2>
+
+    <p className="mt-3 text-gray-400 max-w-md">
+      We are finding a stranger for you.
+      Stay here and your conversation will start soon.
+    </p>
+
+  </div>
+) : (
+  <ChatMessages
+    messages={messages}
+  />
+)}    
 
         
 
