@@ -207,7 +207,7 @@ if (!session) {
   }
 /> 
 
-      <div className="flex-1 overflow-hidden flex flex-col">
+     <div className="flex-1 flex flex-col min-h-0"> 
 
         <ChatMessages
           messages={messages}
@@ -246,7 +246,7 @@ if (!session) {
 {showProfileMenu && (
   <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
 
-<div className="bg-gray-900 rounded-2xl p-6 w-80 border border-gray-800 relative flex flex-col min-h-[420px">
+<div className="bg-gray-900 rounded-2xl p-6 w-80 border border-gray-800 relative flex flex-col min-h-[420px]">
   <button
   onClick={() =>
     setShowProfileMenu(false)
