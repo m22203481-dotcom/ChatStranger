@@ -7,6 +7,7 @@ type ChatHeaderProps = {
 };
 import Image from "next/image";
 export default function ChatHeader({
+  status,
   onlineUsers,
   onReport,
   session,
@@ -25,12 +26,16 @@ export default function ChatHeader({
         </div>
 
         <button
-          onClick={onReport}
-          className="px-3 py-1 rounded-full text-sm font-semibold bg-yellow-600 hover:bg-yellow-700 transition"
-        >
-          Report
-        </button>
-
+  onClick={onReport}
+  disabled={status !== "Connected"}
+  className={`px-3 py-1 rounded-full text-sm font-semibold transition ${
+    status === "Connected"
+      ? "bg-yellow-600 hover:bg-yellow-700"
+      : "bg-gray-700 opacity-50 cursor-not-allowed"
+  }`}
+>
+  Report
+</button>
         <button
   onClick={onProfileClick}
   className="flex flex-col items-center ml-2"

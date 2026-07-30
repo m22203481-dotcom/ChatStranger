@@ -196,7 +196,11 @@ if (!session) {
      <ChatHeader
   status={status}
   onlineUsers={onlineUsers}
-  onReport={() => setShowReport(true)}
+  onReport={() => {
+  if (status === "Connected") {
+    setShowReport(true);
+  }
+}}
   session={session}
   onProfileClick={() =>
     setShowProfileMenu(true)
@@ -374,9 +378,6 @@ if (!session) {
               >
                 Submit
               </button>
-<button onClick={() => signOut()}>
-  Logout
-</button>
             </div>
 
           </div>
