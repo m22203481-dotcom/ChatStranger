@@ -221,10 +221,30 @@ if (!session) {
   )}
 
   {status === "Searching..." && (
-    <span className="text-yellow-400">
+  <div className="flex items-center gap-2 text-yellow-400">
+
+    <span>
       🔍 Searching for stranger...
     </span>
-  )}
+
+    <span className="flex gap-1">
+
+      <span className="animate-bounce">
+        ●
+      </span>
+
+      <span className="animate-bounce [animation-delay:150ms]">
+        ●
+      </span>
+
+      <span className="animate-bounce [animation-delay:300ms]">
+        ●
+      </span>
+
+    </span>
+
+  </div>
+)}
 
   {status === "Stranger disconnected" && (
     <span className="text-red-400">
