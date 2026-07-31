@@ -203,11 +203,6 @@ const [strangerProfile, setStrangerProfile] = useState<{
 
   return (
     <main className="h-screen bg-black text-white flex flex-col overflow-hidden">
-      
-         <h1 className="text-red-500 text-4xl text-center">
-      NEW BUILD TEST
-    </h1>
- 
       <ChatHeader
         status={status}
         onlineUsers={onlineUsers}
