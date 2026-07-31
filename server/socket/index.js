@@ -7,7 +7,8 @@ import {
 import {
     addToQueue,
     removeFromQueue,
-    getNextPair
+    getNextPair,
+    blockPair
 } from "./queue.js";
 
 import {
@@ -21,7 +22,7 @@ export default function registerSocketEvents(io) {
     console.log("Socket system initialized");
 
     const userRooms = new Map();
-
+    const skippedPairs = new Set();
     io.on("connection", (socket) => {
 
         console.log("User connected:", socket.id);
@@ -225,31 +226,60 @@ socket.on("reportUser", ({ reason }) => {
 
     if (oldRoom) {
 
-        socket
-            .to(oldRoom)
-            .emit(
-                "strangerDisconnected"
-            );
+     const roomData = getRoom(oldRoom);
+    if (roomData) {
+
+ const otherUser =
+    roomData.users.find(
+        (user) => user !== socket.id
+    );
+
+console.log("ROOM USERS:", roomData.users);
+console.log("CURRENT USER:", socket.id);
+console.log("OTHER USER:", otherUser);
+
+if (otherUser) {
+
+    blockPair(
+        socket.id,
+        otherUser
+    );
+
+    const otherSocket =
+        io.sockets.sockets.get(otherUser);
+
+    console.log(
+        "OTHER SOCKET:",
+        !!otherSocket
+    );
+
+    if (otherSocket) {
+
+        console.log(
+            "EMITTING strangerSkipped TO:",
+            otherUser
+        );
+
+        otherSocket.emit(
+            "strangerSkipped"
+        );
+
+    }
+}   
 
 
-        const roomData =
-            getRoom(oldRoom);
+    roomData.users.forEach(
+        (user) => {
 
-
-        if (roomData) {
-
-            roomData.users.forEach(
-                (user) => {
-
-                    userRooms.delete(user);
-
-                }
-            );
+            userRooms.delete(user);
 
         }
+    );
+
+}
 
 
-        removeRoom(oldRoom);
+removeRoom(oldRoom);
 
     }
 

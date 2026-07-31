@@ -7,6 +7,8 @@ import dotenv from "dotenv";
 
 import { Server } from "socket.io";
 import initializeSocket from "./config/socket.js";
+import connectDB from "./config/db.js";
+import authRouter from "./routes/auth.js";
 
 dotenv.config();
 
@@ -26,6 +28,8 @@ app.use(helmet());
 app.use(morgan("dev"));
 
 app.use(express.json());
+
+app.use("/api/auth", authRouter);
 
 app.get("/", (req, res) => {
     res.json({
@@ -47,12 +51,16 @@ initializeSocket(io);
 
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-    console.log("");
-    console.log("==================================");
-    console.log(" StrangerConnect Server Started");
-    console.log("==================================");
-    console.log(` Port : ${PORT}`);
-    console.log(` Mode : ${process.env.NODE_ENV}`);
-    console.log("==================================");
+connectDB().then(() => {
+
+    server.listen(PORT, () => {
+        console.log("");
+        console.log("==================================");
+        console.log(" StrangerConnect Server Started");
+        console.log("==================================");
+        console.log(` Port : ${PORT}`);
+        console.log(` Mode : ${process.env.NODE_ENV}`);
+        console.log("==================================");
+    });
+
 });
