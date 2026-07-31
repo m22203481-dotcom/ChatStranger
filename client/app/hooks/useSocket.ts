@@ -37,6 +37,7 @@ export default function useSocket({
   interests,
 }: UseSocketProps): void {
   console.log("PROFILE RECEIVED:", profile);
+  // console.log("PROFILE RECEIVED:", profile);
   // Keep a ref so the socket handlers always see the latest interests
   // without needing to re-run the connection effect
   const interestsRef = useRef(interests);
