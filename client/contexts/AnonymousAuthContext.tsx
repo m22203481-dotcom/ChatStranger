@@ -78,13 +78,26 @@ export function AnonymousAuthProvider({
     try {
       const existingToken = localStorage.getItem(STORAGE_KEY);
 
+      // Render's free tier sleeps when idle and can take 20-50s to
+      // cold-start on the first request after a while — give it real
+      // room, but don't let the UI hang forever if it's genuinely down
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+
       const res = await fetch(`${SOCKET_URL}/api/auth/anonymous`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token: existingToken || undefined,
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        throw new Error(`Guest auth responded with ${res.status}`);
+      }
 
       const data = await res.json();
 
@@ -92,6 +105,9 @@ export function AnonymousAuthProvider({
       setAnonUser(data);
     } catch (error) {
       console.error("GUEST LOGIN FAILED:", error);
+      // Re-throw so the caller knows this failed and doesn't treat it
+      // as a success (e.g. navigating to /chat with no identity set)
+      throw error;
     } finally {
       setIsAnonLoading(false);
     }

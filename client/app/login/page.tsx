@@ -10,19 +10,36 @@ export default function LoginPage() {
   const router = useRouter();
   const { anonUser, loginAsGuest } = useAnonymousAuth();
   const [isGuestLoading, setIsGuestLoading] = useState(false);
+  const [guestError, setGuestError] = useState<string | null>(null);
 
+  // This is the ONLY place that navigates to /chat for a guest. It only
+  // fires once anonUser is actually set — so a failed login never sends
+  // you to /chat with no identity, which is what caused the "bounces
+  // back to login" symptom before.
   useEffect(() => {
     if (session || anonUser) {
       router.push("/chat");
     }
   }, [session, anonUser, router]);
 
-const handleGuestLogin = async () => {
+  const handleGuestLogin = async () => {
+    setGuestError(null);
     setIsGuestLoading(true);
-    await loginAsGuest();
-    setIsGuestLoading(false);
-    router.push("/chat");
+
+    try {
+      await loginAsGuest();
+      // No router.push here — the effect above handles it once anonUser
+      // updates. If loginAsGuest failed, it threw and we land in catch
+      // instead, so we never navigate to /chat without a real identity.
+    } catch (error) {
+      setGuestError(
+        "Couldn't connect right now — our server may be waking up from idle. Please try again in a few seconds."
+      );
+    } finally {
+      setIsGuestLoading(false);
+    }
   };
+
   if (status === "loading") {
     return (
       <main className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -117,6 +134,10 @@ const handleGuestLogin = async () => {
             ? "Setting up your identity..."
             : "Continue as Guest"}
         </button>
+
+        {guestError && (
+          <p className="mt-3 text-sm text-red-400">{guestError}</p>
+        )}
 
         <p className="mt-3 text-xs text-gray-500">
           You'll get a random name and avatar. No account needed —
