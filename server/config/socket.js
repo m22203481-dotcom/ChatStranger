@@ -163,12 +163,22 @@ export default function registerSocketEvents(io) {
 
         // Identify who this socket belongs to (Google or guest) so
         // friend requests / DMs / history can be tied to a real account.
-        // Runs as a background task — NOT awaited here — so it never
-        // delays registering the handlers below. If a client emits
-        // findStranger before this resolves, socket.userId just won't
-        // be set yet for a few hundred ms, which is fine since random
-        // matching doesn't depend on it.
-        (async () => {
+        //
+        // This used to be a bare fire-and-forget IIFE, which let
+        // findStranger race ahead of socket.userId being set. If someone
+        // had two sessions open (e.g. laptop + mobile) and hit "find"
+        // on both before this resolved, addToQueue() saw userId=null
+        // for both sockets, isSamePerson() had nothing to compare, and
+        // the queue could pair a person with their own other device —
+        // each side would then see the OTHER device's live profile
+        // rendered as "the stranger".
+        //
+        // Fix: keep the identity resolution as a promise on the socket
+        // itself, and have findStranger/nextStranger await it before
+        // touching the queue. socket.userId is then guaranteed to be
+        // fully settled (real id, or confirmed null for a guest) before
+        // any matching decision is made.
+        socket.identityPromise = (async () => {
 
             try {
 
@@ -228,7 +238,13 @@ export default function registerSocketEvents(io) {
         }
 
         // FIND STRANGER
-        socket.on("findStranger", (payload) => {
+        socket.on("findStranger", async (payload) => {
+
+            // Make sure socket.userId is fully settled (not just "not
+            // set yet") before we let this socket anywhere near the
+            // queue — otherwise two sessions of the same account can
+            // slip past isSamePerson() and get matched with each other.
+            await socket.identityPromise;
 
             console.log("FIND REQUEST:", socket.id, payload);
 
@@ -503,7 +519,9 @@ export default function registerSocketEvents(io) {
         });
 
         // NEXT STRANGER
-        socket.on("nextStranger", () => {
+        socket.on("nextStranger", async () => {
+
+            await socket.identityPromise;
 
             console.log("NEXT REQUEST:", socket.id);
 
@@ -771,15 +789,58 @@ export default function registerSocketEvents(io) {
 
                 const friendUsers = await User.find({ _id: { $in: friendIds } });
 
-                socket.emit(
-                    "friendsList",
-                    friendUsers.map((f) => ({
+                // One query for every friend-DM conversation this user is
+                // part of, so we can attach unread/lastMessageAt without
+                // an N+1 query per friend
+                const conversations = await Conversation.find({
+                    isFriendChat: true,
+                    participants: socket.userId,
+                });
+
+                const conversationByFriendId = new Map();
+
+                conversations.forEach((c) => {
+
+                    const otherId = c.participants
+                        .map((p) => p.toString())
+                        .find((id) => id !== socket.userId);
+
+                    if (otherId) conversationByFriendId.set(otherId, c);
+
+                });
+
+                const enriched = friendUsers.map((f) => {
+
+                    const friendId = f._id.toString();
+                    const conversation = conversationByFriendId.get(friendId);
+
+                    const isUnread = Boolean(
+                        conversation &&
+                        !conversation.readBy
+                            .map((id) => id.toString())
+                            .includes(socket.userId)
+                    );
+
+                    return {
                         userId: f._id,
                         displayName: f.displayName,
                         avatarUrl: f.avatarUrl,
-                        isOnline: onlineUserCounts.has(f._id.toString()),
-                    }))
+                        isOnline: onlineUserCounts.has(friendId),
+                        isUnread,
+                        lastMessageAt: conversation?.lastMessageAt
+                            ? conversation.lastMessageAt.getTime()
+                            : null,
+                    };
+
+                });
+
+                // Most recent activity first; friends with no DM history
+                // yet fall to the bottom
+                enriched.sort(
+                    (a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0)
                 );
+
+                socket.emit("friendsList", enriched);
 
             } catch (error) {
 
@@ -844,6 +905,12 @@ export default function registerSocketEvents(io) {
 
                 socket.join(roomName);
 
+                // Opening the chat counts as reading it
+                await Conversation.updateOne(
+                    { _id: conversation._id },
+                    { $addToSet: { readBy: socket.userId } }
+                );
+
                 const pastMessages = await Message.find({
                     conversation: conversation._id,
                 })
@@ -892,6 +959,37 @@ export default function registerSocketEvents(io) {
                         fileName: fileName || null,
                     });
 
+                    const conversation = await Conversation.findById(conversationId);
+
+                    const recipientId = conversation?.participants
+                        .map((p) => p.toString())
+                        .find((id) => id !== socket.userId);
+
+                    // A recipient counts as "already read" only if their
+                    // socket is actually sitting in this friend room right
+                    // now (chat window open) at the moment we send.
+                    const roomMemberIds = [
+                        ...(io.sockets.adapter.rooms.get(roomName) || []),
+                    ];
+
+                    const recipientViewing = roomMemberIds.some(
+                        (id) => io.sockets.sockets.get(id)?.userId === recipientId
+                    );
+
+                    if (conversation) {
+
+                        conversation.lastMessageAt = message.createdAt;
+                        conversation.lastMessagePreview =
+                            message.text || (message.fileUrl ? "📎 Attachment" : "");
+                        conversation.readBy = recipientViewing
+                            ? [socket.userId, recipientId]
+                            : [socket.userId];
+
+                        await conversation.save();
+
+                    }
+
+                    // Live update for whoever currently has this chat open
                     socket.to(roomName).emit("receiveFriendMessage", {
                         conversationId,
                         text: message.text,
@@ -901,6 +999,21 @@ export default function registerSocketEvents(io) {
                         senderId: socket.userId,
                         timestamp: message.createdAt.getTime(),
                     });
+
+                    // Friends-list update (unread dot + reorder to top) —
+                    // sent to the recipient's personal room so it arrives
+                    // even if they don't have this chat open right now
+                    if (recipientId && !recipientViewing) {
+
+                        io.to(`user-${recipientId}`).emit("friendMessageNotification", {
+                            conversationId,
+                            senderId: socket.userId,
+                            preview:
+                                message.text || (message.fileUrl ? "📎 Attachment" : ""),
+                            timestamp: message.createdAt.getTime(),
+                        });
+
+                    }
 
                 } catch (error) {
 

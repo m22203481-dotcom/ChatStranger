@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { socket } from "@/services/socket";
+import { playMessageSound, playConnectSound } from "@/lib/sounds";
 
 export type SocketIdentity =
   | { provider: "google"; email: string; name: string }
@@ -107,6 +108,8 @@ export default function useSocket({
    socket.on("matched", (data) => {
   console.log("🔥 MATCHED EVENT FULL:", data);
 
+  playConnectSound();
+
   pendingReadIdsRef.current.clear();
   setMessages([]);
   setSharedTags(data?.sharedTags ?? []);
@@ -154,6 +157,8 @@ export default function useSocket({
 
     socket.on("receiveMessage", (data: any) => {
       console.log("Received message:", data);
+
+      playMessageSound();
 
       setMessages((prev) => [
         ...prev,

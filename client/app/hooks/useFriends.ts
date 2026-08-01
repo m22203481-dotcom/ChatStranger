@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { socket } from "@/services/socket";
+import { playDmSound, playFriendRequestSound } from "@/lib/sounds";
 
 export type FriendRequestReceived = {
   friendshipId: string;
@@ -13,6 +14,8 @@ export type Friend = {
   displayName: string;
   avatarUrl: string;
   isOnline?: boolean;
+  isUnread?: boolean;
+  lastMessageAt?: number | null;
 };
 
 export type FriendMessage = {
@@ -46,8 +49,18 @@ export default function useFriends() {
     new Set()
   );
 
+  // Socket listeners are registered once (empty dep array below), so they
+  // close over stale state if we read activeFriendChat directly. This ref
+  // always has the current value.
+  const activeFriendChatRef = useRef<ActiveFriendChat | null>(null);
+
+  useEffect(() => {
+    activeFriendChatRef.current = activeFriendChat;
+  }, [activeFriendChat]);
+
   useEffect(() => {
     socket.on("friendRequestReceived", (data: FriendRequestReceived) => {
+      playFriendRequestSound();
       setIncomingRequest(data);
     });
 
@@ -80,6 +93,12 @@ export default function useFriends() {
 
     socket.on("friendsList", (list: Friend[]) => {
       setFriends(list);
+
+      // Server already tells us who's unread as of the last time we
+      // read anything (persisted), and already sorted by recent activity
+      setUnreadFriendIds(
+        new Set(list.filter((f) => f.isUnread).map((f) => f.userId))
+      );
     });
 
     socket.on("friendRemoved", ({ friendUserId }: { friendUserId: string }) => {
@@ -118,6 +137,21 @@ export default function useFriends() {
     });
 
     socket.on("receiveFriendMessage", (data: any) => {
+      playDmSound();
+
+      // Keep the list ordered by recent activity even when the chat is
+      // already open (server won't send friendMessageNotification here)
+      if (data.senderId) {
+        setFriends((prev) => {
+          const idx = prev.findIndex((f) => f.userId === data.senderId);
+          if (idx <= 0) return prev;
+
+          const friend = { ...prev[idx], lastMessageAt: data.timestamp };
+          const rest = [...prev.slice(0, idx), ...prev.slice(idx + 1)];
+          return [friend, ...rest];
+        });
+      }
+
       setActiveFriendChat((prev) => {
         if (!prev || prev.conversationId !== data.conversationId) {
           // Not currently viewing this conversation — flag it unread
@@ -150,6 +184,44 @@ export default function useFriends() {
       });
     });
 
+    // Fired for a friend's DM even when their chat isn't currently open,
+    // so the badge + reorder work regardless of what's on screen
+    socket.on(
+      "friendMessageNotification",
+      ({
+        conversationId,
+        senderId,
+        timestamp,
+      }: {
+        conversationId: string;
+        senderId: string;
+        timestamp: number;
+      }) => {
+        playDmSound();
+
+        setFriends((prev) => {
+          const idx = prev.findIndex((f) => f.userId === senderId);
+          if (idx === -1) return prev;
+
+          const friend = { ...prev[idx], lastMessageAt: timestamp };
+          const rest = [...prev.slice(0, idx), ...prev.slice(idx + 1)];
+          return [friend, ...rest];
+        });
+
+        const isCurrentlyOpen =
+          activeFriendChatRef.current?.conversationId === conversationId;
+
+        if (!isCurrentlyOpen) {
+          setUnreadFriendIds((prevSet) => {
+            if (prevSet.has(senderId)) return prevSet;
+            const next = new Set(prevSet);
+            next.add(senderId);
+            return next;
+          });
+        }
+      }
+    );
+
     return () => {
       socket.off("friendRequestReceived");
       socket.off("friendRequestSent");
@@ -159,6 +231,7 @@ export default function useFriends() {
       socket.off("friendPresence");
       socket.off("friendChatOpened");
       socket.off("receiveFriendMessage");
+      socket.off("friendMessageNotification");
     };
   }, []);
 

@@ -38,6 +38,33 @@ const conversationSchema = new mongoose.Schema(
             type: [String],
             default: [],
         },
+
+        // When the most recent message in this conversation was sent.
+        // Used to sort the friends list (most recent DM first) without
+        // having to query the Message collection just for ordering.
+        lastMessageAt: {
+            type: Date,
+            default: null,
+        },
+
+        // Short preview of the most recent message, for future use in
+        // the friends list (e.g. "Hey, you around?" under the name).
+        lastMessagePreview: {
+            type: String,
+            default: "",
+        },
+
+        // Which participants have "read" the conversation as of
+        // lastMessageAt. Reset to just [sender] every time a new
+        // message is sent; a participant is added back in once they
+        // open the chat. A friend is "unread" for a user when that
+        // user's id is NOT in this array.
+        readBy: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+            },
+        ],
     },
     {
         timestamps: true,
