@@ -3,10 +3,16 @@ const waitingUsers = [];
 // socketId -> string[] of lowercase interest tags
 const userInterests = new Map();
 
+// socketId -> resolved account/user id (Google id or anonymous-token-backed
+// user id), when known. Used to make sure we never pair two sockets that
+// actually belong to the same person (e.g. two tabs, or a reconnect that
+// briefly leaves an old socket lingering in the queue).
+const socketOwners = new Map();
+
 const blockedPairs = new Set();
 
 
-export function addToQueue(socketId, interests = []) {
+export function addToQueue(socketId, interests = [], userId = null) {
 
     if (!waitingUsers.includes(socketId)) {
         waitingUsers.push(socketId);
@@ -17,6 +23,12 @@ export function addToQueue(socketId, interests = []) {
         .filter((tag) => tag.length > 0);
 
     userInterests.set(socketId, cleanInterests);
+
+    if (userId) {
+        socketOwners.set(socketId, userId);
+    } else {
+        socketOwners.delete(socketId);
+    }
 
     console.log("QUEUE:", waitingUsers);
     console.log("INTERESTS SET:", socketId, cleanInterests);
@@ -33,11 +45,26 @@ export function removeFromQueue(socketId) {
     }
 
     userInterests.delete(socketId);
+    socketOwners.delete(socketId);
 
     console.log(
         "QUEUE AFTER REMOVE:",
         waitingUsers
     );
+}
+
+
+// True if two queued sockets are actually the same underlying person
+// (same resolved account/anonymous-token id), so we must never pair them.
+function isSamePerson(user1, user2) {
+
+    if (user1 === user2) return true;
+
+    const owner1 = socketOwners.get(user1);
+    const owner2 = socketOwners.get(user2);
+
+    return Boolean(owner1) && Boolean(owner2) && owner1 === owner2;
+
 }
 
 
@@ -90,6 +117,8 @@ export function getNextPair() {
 
             const user2 = waitingUsers[j];
 
+            if (isSamePerson(user1, user2)) continue;
+
             if (blockedPairs.has(`${user1}:${user2}`)) continue;
 
             const shared = sharedInterests(user1, user2);
@@ -115,6 +144,8 @@ export function getNextPair() {
 
             const user1 = waitingUsers[i];
             const user2 = waitingUsers[j];
+
+            if (isSamePerson(user1, user2)) continue;
 
             if (!blockedPairs.has(`${user1}:${user2}`)) {
 

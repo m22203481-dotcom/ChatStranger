@@ -314,7 +314,7 @@ export default function registerSocketEvents(io) {
 
             removeFromQueue(socket.id);
 
-            addToQueue(socket.id, interests);
+            addToQueue(socket.id, interests, socket.userId ?? null);
 
             console.log("QUEUE ADD:", socket.id);
 
@@ -563,7 +563,7 @@ export default function registerSocketEvents(io) {
 
             const interests = socketInterests.get(socket.id) ?? [];
 
-            addToQueue(socket.id, interests);
+            addToQueue(socket.id, interests, socket.userId ?? null);
 
             socket.emit("waiting");
 
@@ -646,8 +646,12 @@ export default function registerSocketEvents(io) {
                     ],
                 });
 
-                if (existing) {
+                let friendship;
 
+                if (existing && existing.status !== "declined") {
+
+                    // A pending or already-accepted request genuinely
+                    // blocks sending another one
                     socket.emit("friendRequestStatus", {
                         status: existing.status,
                         alreadyExists: true,
@@ -655,13 +659,27 @@ export default function registerSocketEvents(io) {
 
                     return;
 
-                }
+                } else if (existing) {
 
-                const friendship = await Friendship.create({
-                    requester: socket.userId,
-                    recipient: otherSocket.userId,
-                    status: "pending",
-                });
+                    // Previously declined — don't let that stale record
+                    // block a fresh request forever. Re-point it at
+                    // whoever is sending now and reopen it as pending.
+                    existing.requester = socket.userId;
+                    existing.recipient = otherSocket.userId;
+                    existing.status = "pending";
+                    existing.respondedAt = undefined;
+
+                    friendship = await existing.save();
+
+                } else {
+
+                    friendship = await Friendship.create({
+                        requester: socket.userId,
+                        recipient: otherSocket.userId,
+                        status: "pending",
+                    });
+
+                }
 
                 // Prefer the live session profile (matches what's on
                 // screen right now); fall back to the saved account
