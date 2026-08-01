@@ -22,6 +22,7 @@ type UseSocketProps = {
     avatarUrl: string;
   } | null>
 >;
+  setStrangerUserId: React.Dispatch<React.SetStateAction<string | null>>;
   interests: string[];
 };
 
@@ -34,6 +35,7 @@ export default function useSocket({
   setIsTyping,
   setSharedTags,
   setStrangerProfile,
+  setStrangerUserId,
   interests,
 }: UseSocketProps): void {
   console.log("PROFILE RECEIVED:", profile);
@@ -41,6 +43,7 @@ export default function useSocket({
   // Keep a ref so the socket handlers always see the latest interests
   // without needing to re-run the connection effect
   const interestsRef = useRef(interests);
+  const pendingReadIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     interestsRef.current = interests;
@@ -77,9 +80,23 @@ export default function useSocket({
     avatarUrl: profile?.image ?? "/default-avatar.png",
   });
 
-  socket.emit("findStranger", {
-    interests: interestsRef.current,
-  });
+  // Wait for the server to resolve our account before searching, so a
+  // returning user can be matched back to their previous chat instead
+  // of starting fresh. Falls back after a short timeout just in case
+  // identity resolution is slow or unavailable.
+  let searchStarted = false;
+
+  const startSearch = () => {
+    if (searchStarted) return;
+    searchStarted = true;
+
+    socket.emit("findStranger", {
+      interests: interestsRef.current,
+    });
+  };
+
+  socket.once("identityResolved", startSearch);
+  setTimeout(startSearch, 3000);
 }); 
 
     socket.on("waiting", () => {
@@ -90,6 +107,7 @@ export default function useSocket({
    socket.on("matched", (data) => {
   console.log("🔥 MATCHED EVENT FULL:", data);
 
+  pendingReadIdsRef.current.clear();
   setMessages([]);
   setSharedTags(data?.sharedTags ?? []);
 
@@ -97,23 +115,93 @@ export default function useSocket({
     setStrangerProfile(data.stranger);
   }
 
+  setStrangerUserId(data?.strangerUserId ?? null);
+
   setStatus("Connected");
 });
+
+    // I reconnected within the grace window — resume the SAME chat.
+    // Deliberately does NOT clear messages/sharedTags like "matched"
+    // does, since this isn't a new stranger
+    socket.on("reconnected", (data) => {
+      console.log("🔁 RESUMED OWN CHAT:", data);
+
+      setSharedTags(data?.sharedTags ?? []);
+
+      if (data?.stranger) {
+        setStrangerProfile(data.stranger);
+      }
+
+      setStrangerUserId(data?.strangerUserId ?? null);
+
+      setStatus("Connected");
+    });
+
+    // The stranger I was talking to came back within the grace window
+    socket.on("strangerReconnected", (data) => {
+      console.log("🔁 STRANGER RECONNECTED:", data);
+
+      if (data?.stranger) {
+        setStrangerProfile(data.stranger);
+      }
+
+      setStatus("Connected");
+    });
+
     socket.on("onlineUsers", (count: number) => {
       setOnlineUsers(count);
     });
 
     socket.on("receiveMessage", (data: any) => {
       console.log("Received message:", data);
+
       setMessages((prev) => [
         ...prev,
         {
+          id: data.id,
           text: data.message,
           sender: "stranger",
           timestamp: Date.now(),
         },
       ]);
+
+      if (data?.id) {
+        // Confirm the message actually arrived on this device
+        socket.emit("messageDelivered", { id: data.id });
+
+        // If the tab is visible right now, treat it as read immediately;
+        // otherwise queue it for when the tab regains focus
+        if (document.visibilityState === "visible") {
+          socket.emit("messageRead", { id: data.id });
+        } else {
+          pendingReadIdsRef.current.add(data.id);
+        }
+      }
     });
+
+    socket.on(
+      "messageStatusUpdate",
+      ({ id, status }: { id: string; status: "delivered" | "read" }) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === id && m.sender === "me" ? { ...m, status } : m
+          )
+        );
+      }
+    );
+
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === "visible" &&
+        pendingReadIdsRef.current.size > 0
+      ) {
+        const ids = Array.from(pendingReadIdsRef.current);
+        pendingReadIdsRef.current.clear();
+        socket.emit("messageRead", { ids });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     socket.on("strangerTyping", () => {
       setIsTyping(true);
@@ -148,6 +236,7 @@ export default function useSocket({
     });
 
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       socket.off();
       socket.disconnect();
     };

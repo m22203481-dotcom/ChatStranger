@@ -7,8 +7,10 @@ import ChatHeader from "@/components/ChatHeader";
 import ChatMessages, {
   Message,
 } from "@/components/ChatMessages";
+import FriendsPanel from "@/components/FriendsPanel";
 import { socket } from "@/services/socket";
 import useSocket, { SocketIdentity } from "@/app/hooks/useSocket";
+import useFriends from "@/app/hooks/useFriends";
 import { useAnonymousAuth } from "@/contexts/AnonymousAuthContext";
 
 export default function ChatPage() {
@@ -31,16 +33,22 @@ export default function ChatPage() {
   const [interestInput, setInterestInput] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
   const [sharedTags, setSharedTags] = useState<string[]>([]);
-const [strangerProfile, setStrangerProfile] = useState<{
-  name: string;
-  avatarUrl: string;
-} | null>(null);
+  const [strangerProfile, setStrangerProfile] = useState<{
+    name: string;
+    avatarUrl: string;
+  } | null>(null);
+  const [strangerUserId, setStrangerUserId] = useState<string | null>(null);
+
+  // Friends
+  const [showFriendsPanel, setShowFriendsPanel] = useState(false);
+  const friends = useFriends();
+
   const statusRef = useRef(status);
 
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
- 
+
 
   const isAuthLoading = authStatus === "loading" || isAnonLoading;
   const isAuthenticated = !!session || !!anonUser;
@@ -78,26 +86,31 @@ const [strangerProfile, setStrangerProfile] = useState<{
     : null;
 
   useSocket({
-  identity,
-  profile,
-  setStatus: (newStatus) => {
-    if (newStatus === "Connected") {
-      setShowMatchFound(true);
+    identity,
+    profile,
+    setStatus: (newStatus) => {
+      if (newStatus === "Connected") {
+        setShowMatchFound(true);
 
-      setTimeout(() => {
-        setShowMatchFound(false);
-      },1200);
-    }
+        setTimeout(() => {
+          setShowMatchFound(false);
+        }, 1200);
+      }
 
-    setStatus(newStatus);
-  },
-  setMessages,
-  setOnlineUsers,
-  setIsTyping,
-  setSharedTags,
-  setStrangerProfile,
-  interests,
-});
+      setStatus(newStatus);
+    },
+    setMessages,
+    setOnlineUsers,
+    setIsTyping,
+    setSharedTags,
+    setStrangerProfile,
+    setStrangerUserId,
+    interests,
+  });
+
+  const strangerIsFriend = !!(
+    strangerUserId && friends.friends.some((f) => f.userId === strangerUserId)
+  );
 
   const addInterest = () => {
     const tag = interestInput.trim().toLowerCase();
@@ -120,30 +133,37 @@ const [strangerProfile, setStrangerProfile] = useState<{
   const sendMessage = () => {
     if (!message.trim()) return;
 
+    const id =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
     const newMessage = message;
 
     setMessages((prev) => [
       ...prev,
       {
+        id,
         text: newMessage,
         sender: "me",
         timestamp: Date.now(),
+        status: "sent",
       },
     ]);
 
-    socket.emit("sendMessage", newMessage);
+    socket.emit("sendMessage", { id, message: newMessage });
 
     setMessage("");
   };
 
   const handleNext = useCallback(() => {
-  if (
-    status !== "Connected" &&
-    status !== "Stranger disconnected" &&
-    status !== "Stranger skipped this chat"
-  ) {
-    return;
-  }
+    if (
+      status !== "Connected" &&
+      status !== "Stranger disconnected" &&
+      status !== "Stranger skipped this chat"
+    ) {
+      return;
+    }
 
     if (!confirmNext) {
       setConfirmNext(true);
@@ -189,6 +209,11 @@ const [strangerProfile, setStrangerProfile] = useState<{
     }
   };
 
+  const openFriendsPanel = () => {
+    friends.loadFriendsList();
+    setShowFriendsPanel(true);
+  };
+
   if (isAuthLoading) {
     return (
       <main className="h-screen bg-black text-white flex items-center justify-center">
@@ -212,7 +237,12 @@ const [strangerProfile, setStrangerProfile] = useState<{
           }
         }}
         profile={profile}
-        onProfileClick={() => setShowProfileMenu(true)}
+        onProfileClick={() => {
+          friends.loadFriendsList();
+          setShowProfileMenu(true);
+        }}
+        onFriendsClick={openFriendsPanel}
+        hasUnreadDMs={friends.hasUnreadDMs}
       />
 
       <div className="flex-1 flex flex-col min-h-0">
@@ -347,6 +377,28 @@ const [strangerProfile, setStrangerProfile] = useState<{
         Online
       </span>
     </div>
+
+    <button
+      onClick={() => {
+        if (!strangerUserId) return;
+
+        if (strangerIsFriend) {
+          friends.removeFriend(strangerUserId);
+        } else {
+          friends.sendFriendRequest();
+        }
+      }}
+      disabled={!strangerUserId}
+      className={`ml-auto px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+        !strangerUserId
+          ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+          : strangerIsFriend
+          ? "bg-red-900/60 hover:bg-red-900 text-red-200"
+          : "bg-green-700 hover:bg-green-600"
+      }`}
+    >
+      {strangerIsFriend ? "Unfriend" : "+ Friend"}
+    </button>
   </div>
 )} 
 
@@ -430,20 +482,6 @@ const [strangerProfile, setStrangerProfile] = useState<{
                 </p>
               )}
             </div>
-
-            <button
-              disabled
-              className="w-full bg-gray-700 py-3 rounded-xl mb-3 text-gray-400"
-            >
-              Coming Soon
-            </button>
-
-            <button
-              disabled
-              className="w-full bg-gray-700 py-3 rounded-xl text-gray-400"
-            >
-              Coming Soon
-            </button>
 
             <button
               onClick={handleLogout}
@@ -534,6 +572,65 @@ const [strangerProfile, setStrangerProfile] = useState<{
     </div>
   </div>
 )} 
+
+      {/* INCOMING FRIEND REQUEST */}
+      {friends.incomingRequest && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-2xl p-6 w-80 text-center border border-gray-800">
+            <img
+              src={friends.incomingRequest.fromAvatarUrl}
+              alt={friends.incomingRequest.fromDisplayName}
+              className="w-16 h-16 rounded-full mx-auto mb-3"
+            />
+
+            <h2 className="font-bold text-lg">
+              {friends.incomingRequest.fromDisplayName}
+            </h2>
+
+            <p className="text-gray-400 text-sm mt-1">
+              wants to add you as a friend
+            </p>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => friends.respondToRequest(false)}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 rounded-full py-2"
+              >
+                Decline
+              </button>
+
+              <button
+                onClick={() => friends.respondToRequest(true)}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-full py-2"
+              >
+                Accept
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FRIEND REQUEST TOAST */}
+      {friends.requestNotice && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-800 border border-gray-700 px-4 py-2 rounded-full text-sm z-50 shadow-lg">
+          {friends.requestNotice}
+        </div>
+      )}
+
+      <FriendsPanel
+        isOpen={showFriendsPanel}
+        onClose={() => {
+          setShowFriendsPanel(false);
+          friends.closeFriendChat();
+        }}
+        friends={friends.friends}
+        activeFriendChat={friends.activeFriendChat}
+        onOpenChat={friends.openFriendChat}
+        onSendMessage={friends.sendFriendMessage}
+        onCloseChat={friends.closeFriendChat}
+        unreadFriendIds={friends.unreadFriendIds}
+      />
+
       <footer className="border-t border-gray-800 p-3 sm:p-4">
         <div className="flex gap-2 sm:gap-3">
           {/* NEXT BUTTON */}

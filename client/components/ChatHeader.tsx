@@ -8,6 +8,8 @@ type ChatHeaderProps = {
     isGuest: boolean;
   };
   onProfileClick: () => void;
+  onFriendsClick: () => void;
+  hasUnreadDMs?: boolean;
 };
 
 
@@ -18,10 +20,23 @@ export default function ChatHeader({
   onReport,
   profile,
   onProfileClick,
+  onFriendsClick,
+  hasUnreadDMs,
 }: ChatHeaderProps) {
   return (
-<header className="border-b border-gray-800 px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-2 min-h-[90px]">
-    <h1 className="text-2xl font-bold">StrangerConnect</h1>
+<header className="border-b border-gray-800 px-4 py-4 flex flex-col gap-3 min-h-[90px]">
+    <h1 className="text-2xl font-bold text-center">StrangerConnect</h1>
+
+    <div className="flex items-center justify-between">
+      <button
+        onClick={onFriendsClick}
+        className="relative px-3 py-1 rounded-full text-sm font-semibold bg-gray-800 hover:bg-gray-700 transition"
+      >
+        Friends
+        {hasUnreadDMs && (
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-black animate-pulse" />
+        )}
+      </button>
 
       <div className="flex items-center gap-4 text-sm sm:text-base">
         <div className="text-blue-400 font-medium">
@@ -61,6 +76,7 @@ export default function ChatHeader({
   )}
 </button> 
       </div>
+    </div>
     </header>
   );
 }

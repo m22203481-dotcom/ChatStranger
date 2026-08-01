@@ -1,14 +1,30 @@
 import { useEffect, useRef } from "react";
 
 export type Message = {
+  id?: string;
   text: string;
   sender: "me" | "stranger";
   timestamp: number;
+  status?: "sent" | "delivered" | "read";
 };
 
 type ChatMessagesProps = {
   messages: Message[];
 };
+
+function MessageTicks({ status }: { status?: Message["status"] }) {
+  if (!status) return null;
+
+  const isRead = status === "read";
+  const color = isRead ? "text-green-400" : "text-gray-400";
+
+  if (status === "sent") {
+    return <span className={`ml-1 ${color}`}>✓</span>;
+  }
+
+  // delivered or read both show double ticks — read just turns them green
+  return <span className={`ml-1 ${color}`}>✓✓</span>;
+}
 
 export default function ChatMessages({
   messages,
@@ -26,7 +42,7 @@ export default function ChatMessages({
 
       {messages.map((msg, index) => (
         <div
-          key={index}
+          key={msg.id ?? index}
           className={`flex animate-in fade-in duration-300 ${
             msg.sender === "me"
               ? "justify-end"
@@ -52,13 +68,17 @@ export default function ChatMessages({
               {msg.text}
             </div>
 
-            <div className="text-xs text-gray-300 mt-2 text-right">
+            <div className="text-xs text-gray-300 mt-2 text-right flex items-center justify-end">
               {new Date(msg.timestamp).toLocaleTimeString(
                 "en-GB",
                 {
                   hour: "2-digit",
                   minute: "2-digit",
                 }
+              )}
+
+              {msg.sender === "me" && (
+                <MessageTicks status={msg.status} />
               )}
             </div>
 
