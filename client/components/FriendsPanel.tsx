@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Friend, FriendMessage } from "@/app/hooks/useFriends";
 import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
 
@@ -39,6 +39,14 @@ export default function FriendsPanel({
   const [draft, setDraft] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to the latest message, same pattern as the stranger-chat
+  // ChatMessages component. Also fires when the conversationId changes,
+  // so switching to a different friend's chat starts scrolled to bottom.
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeFriendChat?.messages, activeFriendChat?.conversationId]);
 
   if (!isOpen) return null;
 
@@ -165,6 +173,8 @@ export default function FriendsPanel({
                   </div>
                 </div>
               ))}
+
+              <div ref={bottomRef} />
             </div>
 
             <div className="p-3 border-t border-gray-800 flex gap-2">

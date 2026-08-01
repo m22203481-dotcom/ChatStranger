@@ -63,9 +63,13 @@ function playTones(tones: Tone[]) {
   });
 }
 
-// Incoming message in a random-stranger chat — one short, neutral blip
+// Incoming message in a random-stranger chat — a soft two-note "pop",
+// gentler than a single flat blip
 export function playMessageSound() {
-  playTones([{ freq: 720, start: 0, duration: 0.09, type: "sine", gain: 0.14 }]);
+  playTones([
+    { freq: 660, start: 0, duration: 0.08, type: "sine", gain: 0.13 },
+    { freq: 880, start: 0.045, duration: 0.11, type: "sine", gain: 0.1 },
+  ]);
 }
 
 // Incoming friend DM — slightly brighter two-note ping, distinct from
