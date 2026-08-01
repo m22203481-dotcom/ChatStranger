@@ -10,6 +10,13 @@ const conversationSchema = new mongoose.Schema(
             },
         ],
 
+        // true = a permanent friend DM thread (messages get saved).
+        // false/absent = an ephemeral random-stranger chat (never saved).
+        isFriendChat: {
+            type: Boolean,
+            default: false,
+        },
+
         startedAt: {
             type: Date,
             default: Date.now,
