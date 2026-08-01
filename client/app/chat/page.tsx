@@ -9,6 +9,8 @@ import ChatMessages, {
 } from "@/components/ChatMessages";
 import FriendsPanel from "@/components/FriendsPanel";
 import { socket } from "@/services/socket";
+import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
+import { generateId } from "@/lib/generateId";
 import useSocket, { SocketIdentity } from "@/app/hooks/useSocket";
 import useFriends from "@/app/hooks/useFriends";
 import { useAnonymousAuth } from "@/contexts/AnonymousAuthContext";
@@ -133,10 +135,7 @@ export default function ChatPage() {
   const sendMessage = () => {
     if (!message.trim()) return;
 
-    const id =
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const id = generateId();
 
     const newMessage = message;
 
@@ -154,6 +153,51 @@ export default function ChatPage() {
     socket.emit("sendMessage", { id, message: newMessage });
 
     setMessage("");
+  };
+
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+
+    e.target.value = ""; // allow selecting the same file again later
+
+    if (!file || status !== "Connected") return;
+
+    setIsUploading(true);
+
+    try {
+      const uploaded = await uploadToCloudinary(file);
+      const id = generateId();
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id,
+          sender: "me",
+          timestamp: Date.now(),
+          status: "sent",
+          fileUrl: uploaded.url,
+          fileType: uploaded.type,
+          fileName: uploaded.name,
+        },
+      ]);
+
+      socket.emit("sendMessage", {
+        id,
+        fileUrl: uploaded.url,
+        fileType: uploaded.type,
+        fileName: uploaded.name,
+      });
+
+    } catch (error: any) {
+      alert(error?.message || "Upload failed — please try again");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleNext = useCallback(() => {
@@ -627,6 +671,7 @@ export default function ChatPage() {
         activeFriendChat={friends.activeFriendChat}
         onOpenChat={friends.openFriendChat}
         onSendMessage={friends.sendFriendMessage}
+        onSendFile={friends.sendFriendFile}
         onCloseChat={friends.closeFriendChat}
         unreadFriendIds={friends.unreadFriendIds}
       />
@@ -641,33 +686,55 @@ export default function ChatPage() {
             {confirmNext ? "Confirm" : "Next"}
           </button>
 
-          {/* MESSAGE INPUT */}
+          {/* MESSAGE INPUT with attach button inside, at the right */}
           <input
-            disabled={status !== "Connected"}
-            value={message}
-            onChange={(e) => {
-              setMessage(e.target.value);
-
-              socket.emit("typing");
-
-              clearTimeout((window as any).typingTimer);
-
-              (window as any).typingTimer = setTimeout(() => {
-                socket.emit("stopTyping");
-              }, 2000);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && status === "Connected") {
-                sendMessage();
-              }
-            }}
-            placeholder={
-              status === "Connected"
-                ? "Type a message..."
-                : "Waiting for stranger..."
-            }
-            className="flex-1 rounded-full bg-gray-900 px-4 py-3 outline-none"
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            className="hidden"
+            accept="image/*,video/*,.pdf,.doc,.docx,.zip,.txt"
           />
+
+          <div className="relative flex-1">
+            <input
+              disabled={status !== "Connected"}
+              value={message}
+              onChange={(e) => {
+                setMessage(e.target.value);
+
+                socket.emit("typing");
+
+                clearTimeout((window as any).typingTimer);
+
+                (window as any).typingTimer = setTimeout(() => {
+                  socket.emit("stopTyping");
+                }, 2000);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && status === "Connected") {
+                  sendMessage();
+                }
+              }}
+              placeholder={
+                status === "Connected"
+                  ? "Type a message..."
+                  : "Waiting for stranger..."
+              }
+              className="w-full rounded-full bg-gray-900 pl-4 pr-11 py-3 outline-none"
+            />
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={status !== "Connected" || isUploading}
+              className={`absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full text-sm ${
+                status === "Connected" && !isUploading
+                  ? "hover:bg-gray-700 text-gray-300"
+                  : "text-gray-600 cursor-not-allowed"
+              }`}
+            >
+              {isUploading ? "..." : "📎"}
+            </button>
+          </div>
 
           {/* SEND BUTTON */}
           <button

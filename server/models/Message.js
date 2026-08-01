@@ -14,9 +14,27 @@ const messageSchema = new mongoose.Schema(
             required: true,
         },
 
+        // Either text or a file attachment (or both) should be present —
+        // enforced in the socket handler rather than here
         text: {
             type: String,
-            required: true,
+            default: "",
+        },
+
+        fileUrl: {
+            type: String,
+            default: null,
+        },
+
+        fileType: {
+            type: String,
+            enum: ["image", "video", "file", null],
+            default: null,
+        },
+
+        fileName: {
+            type: String,
+            default: null,
         },
     },
     {

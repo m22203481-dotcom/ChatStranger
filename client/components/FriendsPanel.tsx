@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Friend, FriendMessage } from "@/app/hooks/useFriends";
+import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
 
 type FriendsPanelProps = {
   isOpen: boolean;
@@ -15,6 +16,11 @@ type FriendsPanelProps = {
   } | null;
   onOpenChat: (friend: Friend) => void;
   onSendMessage: (text: string) => void;
+  onSendFile: (uploaded: {
+    url: string;
+    type: "image" | "video" | "file";
+    name: string;
+  }) => void;
   onCloseChat: () => void;
   unreadFriendIds?: Set<string>;
 };
@@ -26,10 +32,13 @@ export default function FriendsPanel({
   activeFriendChat,
   onOpenChat,
   onSendMessage,
+  onSendFile,
   onCloseChat,
   unreadFriendIds,
 }: FriendsPanelProps) {
   const [draft, setDraft] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -37,6 +46,27 @@ export default function FriendsPanel({
     if (!draft.trim()) return;
     onSendMessage(draft);
     setDraft("");
+  };
+
+  const handleFileSelect = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+
+    e.target.value = "";
+
+    if (!file) return;
+
+    setIsUploading(true);
+
+    try {
+      const uploaded = await uploadToCloudinary(file);
+      onSendFile(uploaded);
+    } catch (error: any) {
+      alert(error?.message || "Upload failed — please try again");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -106,7 +136,32 @@ export default function FriendsPanel({
                         : "bg-gray-800"
                     }`}
                   >
-                    {msg.text}
+                    {msg.fileUrl ? (
+                      msg.fileType === "image" ? (
+                        <img
+                          src={msg.fileUrl}
+                          alt={msg.fileName ?? "image"}
+                          className="rounded-lg max-w-full max-h-56 object-cover"
+                        />
+                      ) : msg.fileType === "video" ? (
+                        <video
+                          src={msg.fileUrl}
+                          controls
+                          className="rounded-lg max-w-full max-h-56"
+                        />
+                      ) : (
+                        <a
+                          href={msg.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 underline"
+                        >
+                          📎 {msg.fileName ?? "Download file"}
+                        </a>
+                      )
+                    ) : (
+                      msg.text
+                    )}
                   </div>
                 </div>
               ))}
@@ -114,14 +169,36 @@ export default function FriendsPanel({
 
             <div className="p-3 border-t border-gray-800 flex gap-2">
               <input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSend();
-                }}
-                placeholder="Message..."
-                className="flex-1 rounded-full bg-gray-900 border border-gray-800 px-4 py-2 text-sm outline-none"
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                className="hidden"
+                accept="image/*,video/*,.pdf,.doc,.docx,.zip,.txt"
               />
+
+              <div className="relative flex-1">
+                <input
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSend();
+                  }}
+                  placeholder="Message..."
+                  className="w-full rounded-full bg-gray-900 border border-gray-800 pl-4 pr-11 py-2 text-sm outline-none"
+                />
+
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className={`absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-sm ${
+                    isUploading
+                      ? "text-gray-600 cursor-not-allowed"
+                      : "hover:bg-gray-700 text-gray-300"
+                  }`}
+                >
+                  {isUploading ? "..." : "📎"}
+                </button>
+              </div>
 
               <button
                 onClick={handleSend}

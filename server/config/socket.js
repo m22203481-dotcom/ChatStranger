@@ -404,7 +404,13 @@ export default function registerSocketEvents(io) {
                 .to(room)
                 .emit(
                     "receiveMessage",
-                    { id: payload?.id, message: payload?.message }
+                    {
+                        id: payload?.id,
+                        message: payload?.message,
+                        fileUrl: payload?.fileUrl,
+                        fileType: payload?.fileType,
+                        fileName: payload?.fileName,
+                    }
                 );
 
         });
@@ -831,6 +837,9 @@ export default function registerSocketEvents(io) {
                     roomName,
                     messages: pastMessages.map((m) => ({
                         text: m.text,
+                        fileUrl: m.fileUrl,
+                        fileType: m.fileType,
+                        fileName: m.fileName,
                         sender:
                             m.sender.toString() === socket.userId
                                 ? "me"
@@ -849,21 +858,28 @@ export default function registerSocketEvents(io) {
 
         socket.on(
             "sendFriendMessage",
-            async ({ conversationId, roomName, text }) => {
+            async ({ conversationId, roomName, text, fileUrl, fileType, fileName }) => {
 
-                if (!socket.userId || !text?.trim()) return;
+                if (!socket.userId) return;
+                if (!text?.trim() && !fileUrl) return;
 
                 try {
 
                     const message = await Message.create({
                         conversation: conversationId,
                         sender: socket.userId,
-                        text: text.trim(),
+                        text: text?.trim() || "",
+                        fileUrl: fileUrl || null,
+                        fileType: fileType || null,
+                        fileName: fileName || null,
                     });
 
                     socket.to(roomName).emit("receiveFriendMessage", {
                         conversationId,
                         text: message.text,
+                        fileUrl: message.fileUrl,
+                        fileType: message.fileType,
+                        fileName: message.fileName,
                         senderId: socket.userId,
                         timestamp: message.createdAt.getTime(),
                     });

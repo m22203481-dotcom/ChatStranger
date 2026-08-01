@@ -16,9 +16,12 @@ export type Friend = {
 };
 
 export type FriendMessage = {
-  text: string;
+  text?: string;
   sender: "me" | "friend";
   timestamp: number;
+  fileUrl?: string;
+  fileType?: "image" | "video" | "file";
+  fileName?: string;
 };
 
 type ActiveFriendChat = {
@@ -103,7 +106,14 @@ export default function useFriends() {
         conversationId: data.conversationId,
         roomName: data.roomName,
         friend: prev?.friend ?? { userId: "", displayName: "", avatarUrl: "" },
-        messages: data.messages,
+        messages: data.messages.map((m: any) => ({
+          text: m.text,
+          sender: m.sender,
+          timestamp: m.timestamp,
+          fileUrl: m.fileUrl,
+          fileType: m.fileType,
+          fileName: m.fileName,
+        })),
       }));
     });
 
@@ -131,6 +141,9 @@ export default function useFriends() {
               text: data.text,
               sender: "friend",
               timestamp: data.timestamp,
+              fileUrl: data.fileUrl,
+              fileType: data.fileType,
+              fileName: data.fileName,
             },
           ],
         };
@@ -222,6 +235,39 @@ export default function useFriends() {
     setActiveFriendChat(null);
   }, []);
 
+  const sendFriendFile = useCallback(
+    (uploaded: { url: string; type: "image" | "video" | "file"; name: string }) => {
+      if (!activeFriendChat) return;
+
+      socket.emit("sendFriendMessage", {
+        conversationId: activeFriendChat.conversationId,
+        roomName: activeFriendChat.roomName,
+        fileUrl: uploaded.url,
+        fileType: uploaded.type,
+        fileName: uploaded.name,
+      });
+
+      setActiveFriendChat((prev) =>
+        prev
+          ? {
+              ...prev,
+              messages: [
+                ...prev.messages,
+                {
+                  sender: "me",
+                  timestamp: Date.now(),
+                  fileUrl: uploaded.url,
+                  fileType: uploaded.type,
+                  fileName: uploaded.name,
+                },
+              ],
+            }
+          : prev
+      );
+    },
+    [activeFriendChat]
+  );
+
   return {
     incomingRequest,
     requestNotice,
@@ -235,6 +281,7 @@ export default function useFriends() {
     removeFriend,
     openFriendChat,
     sendFriendMessage,
+    sendFriendFile,
     closeFriendChat,
   };
 }

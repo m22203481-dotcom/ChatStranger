@@ -162,6 +162,9 @@ export default function useSocket({
           text: data.message,
           sender: "stranger",
           timestamp: Date.now(),
+          fileUrl: data.fileUrl,
+          fileType: data.fileType,
+          fileName: data.fileName,
         },
       ]);
 
