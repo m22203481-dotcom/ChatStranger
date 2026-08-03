@@ -21,10 +21,16 @@ type UseSocketProps = {
   React.SetStateAction<{
     name: string;
     avatarUrl: string;
+    isPremium?: boolean;
   } | null>
 >;
   setStrangerUserId: React.Dispatch<React.SetStateAction<string | null>>;
   interests: string[];
+  // Premium features
+  genderPreference?: string[];
+  setIsPremium?: React.Dispatch<React.SetStateAction<boolean>>;
+  onMediaBlocked?: () => void;
+  onUndoUnavailable?: (reason: string) => void;
 };
 
 export default function useSocket({
@@ -38,17 +44,26 @@ export default function useSocket({
   setStrangerProfile,
   setStrangerUserId,
   interests,
+  genderPreference = [],
+  setIsPremium,
+  onMediaBlocked,
+  onUndoUnavailable,
 }: UseSocketProps): void {
   console.log("PROFILE RECEIVED:", profile);
   // console.log("PROFILE RECEIVED:", profile);
   // Keep a ref so the socket handlers always see the latest interests
   // without needing to re-run the connection effect
   const interestsRef = useRef(interests);
+  const genderPreferenceRef = useRef(genderPreference);
   const pendingReadIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     interestsRef.current = interests;
   }, [interests]);
+
+  useEffect(() => {
+    genderPreferenceRef.current = genderPreference;
+  }, [genderPreference]);
 
   const identityKey = identity
     ? identity.provider === "google"
@@ -93,12 +108,31 @@ export default function useSocket({
 
     socket.emit("findStranger", {
       interests: interestsRef.current,
+      genderPreference: genderPreferenceRef.current,
     });
   };
 
   socket.once("identityResolved", startSearch);
   setTimeout(startSearch, 3000);
 }); 
+
+    // Separate from the once-listener above (which only kicks off the
+    // first search) — this one stays registered for the whole session so
+    // isPremium stays in sync if it changes later (e.g. the dev toggle)
+    socket.on("identityResolved", (data: any) => {
+      setIsPremium?.(Boolean(data?.isPremium));
+    });
+
+    socket.on("mediaBlocked", () => {
+      onMediaBlocked?.();
+    });
+
+    socket.on(
+      "undoUnavailable",
+      ({ reason }: { reason: string }) => {
+        onUndoUnavailable?.(reason);
+      }
+    );
 
     socket.on("waiting", () => {
       console.log("Waiting...");
@@ -239,7 +273,10 @@ export default function useSocket({
 
       setTimeout(() => {
         setStatus("Searching...");
-        socket.emit("findStranger", { interests: interestsRef.current });
+        socket.emit("findStranger", {
+          interests: interestsRef.current,
+          genderPreference: genderPreferenceRef.current,
+        });
       }, 1500);
     });
 

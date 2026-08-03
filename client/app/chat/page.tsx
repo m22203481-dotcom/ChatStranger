@@ -14,10 +14,12 @@ import { generateId } from "@/lib/generateId";
 import useSocket, { SocketIdentity } from "@/app/hooks/useSocket";
 import useFriends from "@/app/hooks/useFriends";
 import { useAnonymousAuth } from "@/contexts/AnonymousAuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function ChatPage() {
   const { data: session, status: authStatus } = useSession();
   const { anonUser, isAnonLoading, logoutGuest } = useAnonymousAuth();
+  const { isDark, toggleTheme } = useTheme();
 
   const router = useRouter();
   const [message, setMessage] = useState("");
@@ -38,12 +40,26 @@ export default function ChatPage() {
   const [strangerProfile, setStrangerProfile] = useState<{
     name: string;
     avatarUrl: string;
+    isPremium?: boolean;
   } | null>(null);
   const [strangerUserId, setStrangerUserId] = useState<string | null>(null);
 
+  // Premium features
+  const [isPremium, setIsPremium] = useState(false);
+  const [genderPreference, setGenderPreference] = useState<string[]>([]);
+  const [premiumNotice, setPremiumNotice] = useState<string | null>(null);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showBlockedUsersModal, setShowBlockedUsersModal] = useState(false);
+  const [showStrangerMenu, setShowStrangerMenu] = useState(false);
+  const [blockedUsers, setBlockedUsers] = useState<
+    { userId: string; displayName: string; avatarUrl: string; isPremium?: boolean }[]
+  >([]);
+
   // Friends
   const [showFriendsPanel, setShowFriendsPanel] = useState(false);
-  const friends = useFriends();
+  const friends = useFriends({
+    onMediaBlocked: () => setShowPremiumModal(true),
+  });
 
   const statusRef = useRef(status);
 
@@ -54,6 +70,15 @@ export default function ChatPage() {
 
   const isAuthLoading = authStatus === "loading" || isAnonLoading;
   const isAuthenticated = !!session || !!anonUser;
+
+  // Guests already have isPremium on their resolved anonUser; Google
+  // users get it slightly later via the socket's identityResolved event
+  // (see setIsPremium passed into useSocket below)
+  useEffect(() => {
+    if (anonUser) {
+      setIsPremium(Boolean(anonUser.isPremium));
+    }
+  }, [anonUser]);
 
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) {
@@ -67,14 +92,16 @@ export default function ChatPage() {
         name: session.user?.name ?? "You",
         image: session.user?.image ?? "/default-avatar.png",
         isGuest: false,
+        isPremium,
       }
     : anonUser
     ? {
         name: anonUser.displayName,
         image: anonUser.avatarUrl,
         isGuest: true,
+        isPremium,
       }
-    : { name: "", image: "/default-avatar.png", isGuest: false };
+    : { name: "", image: "/default-avatar.png", isGuest: false, isPremium: false };
 
   // What the socket handshake identifies this connection as
   const identity: SocketIdentity | null = session?.user?.email
@@ -108,6 +135,21 @@ export default function ChatPage() {
     setStrangerProfile,
     setStrangerUserId,
     interests,
+    genderPreference,
+    setIsPremium,
+    onMediaBlocked: () => {
+      setPremiumNotice("Sending photos/videos is a premium feature.");
+      setTimeout(() => setPremiumNotice(null), 3000);
+    },
+    onUndoUnavailable: (reason) => {
+      const messages: Record<string, string> = {
+        premium_required: "Undo is a premium feature.",
+        expired: "Too late to undo that skip.",
+        partner_unavailable: "That stranger is no longer available.",
+      };
+      setPremiumNotice(messages[reason] ?? "Couldn't undo that skip.");
+      setTimeout(() => setPremiumNotice(null), 3000);
+    },
   });
 
   const strangerIsFriend = !!(
@@ -130,6 +172,19 @@ export default function ChatPage() {
 
   const removeInterest = (tag: string) => {
     setInterests((prev) => prev.filter((t) => t !== tag));
+  };
+
+  const toggleGenderPreference = (gender: string) => {
+    if (!isPremium) {
+      setShowPremiumModal(true);
+      return;
+    }
+
+    setGenderPreference((prev) =>
+      prev.includes(gender)
+        ? prev.filter((g) => g !== gender)
+        : [...prev, gender]
+    );
   };
 
   const sendMessage = () => {
@@ -166,6 +221,11 @@ export default function ChatPage() {
     e.target.value = ""; // allow selecting the same file again later
 
     if (!file || status !== "Connected") return;
+
+    if (!isPremium) {
+      setShowPremiumModal(true);
+      return;
+    }
 
     setIsUploading(true);
 
@@ -244,13 +304,63 @@ export default function ChatPage() {
     };
   }, [handleNext]);
 
+  // BLOCKING — listens for confirmation that a block went through (ends
+  // the current chat and auto-searches, handled server-side), plus the
+  // Blocked Users list itself
+  useEffect(() => {
+    const handleUserBlocked = () => {
+      setStrangerProfile(null);
+      setStrangerUserId(null);
+      setMessages([]);
+      setSharedTags([]);
+      setStatus("Searching...");
+      setShowStrangerMenu(false);
+    };
+
+    const handleBlockedUsersList = (
+      list: { userId: string; displayName: string; avatarUrl: string; isPremium?: boolean }[]
+    ) => {
+      setBlockedUsers(list);
+    };
+
+    const handleUserUnblocked = ({ blockedUserId }: { blockedUserId: string }) => {
+      setBlockedUsers((prev) => prev.filter((u) => u.userId !== blockedUserId));
+    };
+
+    socket.on("userBlocked", handleUserBlocked);
+    socket.on("blockedUsersList", handleBlockedUsersList);
+    socket.on("userUnblocked", handleUserUnblocked);
+
+    return () => {
+      socket.off("userBlocked", handleUserBlocked);
+      socket.off("blockedUsersList", handleBlockedUsersList);
+      socket.off("userUnblocked", handleUserUnblocked);
+    };
+  }, []);
+
   const handleLogout = () => {
     if (session) {
       signOut({ callbackUrl: "/login" });
     } else {
+      // Don't push("/login") here — the effect above already redirects
+      // to /login as soon as isAuthenticated goes false. Navigating
+      // manually too raced against logoutGuest()'s state update (which
+      // hasn't necessarily committed yet), causing flicker/inconsistent
+      // landing behavior.
       logoutGuest();
-      router.push("/login");
     }
+  };
+
+  const handleUndoSkip = () => {
+    if (!isPremium) return;
+    socket.emit("undoSkip");
+  };
+
+  // Dev-only: flip isPremium for testing without a real payment flow.
+  // The server itself no-ops this outside development, so it's harmless
+  // to leave the button in place.
+  const handleDevTogglePremium = () => {
+    socket.emit("devTogglePremium");
   };
 
   const openFriendsPanel = () => {
@@ -260,7 +370,7 @@ export default function ChatPage() {
 
   if (isAuthLoading) {
     return (
-      <main className="h-screen bg-black text-white flex items-center justify-center">
+      <main className={`h-screen flex items-center justify-center ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
         Loading...
       </main>
     );
@@ -271,7 +381,7 @@ export default function ChatPage() {
   }
 
   return (
-    <main className="h-screen bg-black text-white flex flex-col overflow-hidden">
+    <main className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
       <ChatHeader
         status={status}
         onlineUsers={onlineUsers}
@@ -287,6 +397,10 @@ export default function ChatPage() {
         }}
         onFriendsClick={openFriendsPanel}
         hasUnreadDMs={friends.hasUnreadDMs}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onGoHome={() => router.push("/")}
+        onBuyPremium={() => setShowPremiumModal(true)}
       />
 
       <div className="flex-1 flex flex-col min-h-0">
@@ -305,7 +419,13 @@ export default function ChatPage() {
 
             {/* INTEREST TAGS INPUT */}
             <div className="mt-6 w-full max-w-sm">
-              <div className="flex gap-2">
+            <div
+  className={`flex items-center gap-2 rounded-2xl border p-2 ${
+    isDark
+      ? "bg-gray-900 border-gray-800"
+      : "bg-white border-gray-200 shadow-sm"
+  }`}
+>  
                 <input
                   value={interestInput}
                   onChange={(e) => setInterestInput(e.target.value)}
@@ -316,12 +436,20 @@ export default function ChatPage() {
                     }
                   }}
                   placeholder="Add an interest (e.g. music)"
-                  className="flex-1 rounded-full bg-gray-900 border border-gray-800 px-4 py-2 text-sm outline-none"
+                 className={`flex-1 bg-transparent px-3 py-2 outline-none ${
+  isDark
+    ? "text-white placeholder-gray-500"
+    : "text-gray-900 placeholder-gray-400"
+}`} 
                 />
 
                 <button
                   onClick={addInterest}
-                  className="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-full text-sm font-semibold"
+                 className={`px-5 py-2 rounded-xl font-semibold transition ${
+  isDark
+    ? "bg-blue-600 hover:bg-blue-700 text-white"
+    : "bg-blue-500 hover:bg-blue-600 text-white"
+}`} 
                 >
                   Add
                 </button>
@@ -351,11 +479,64 @@ export default function ChatPage() {
                 interest. Leave this empty for a fully random match.
               </p>
             </div>
+
+            {/* GENDER FILTER (premium only) */}
+            <div className="mt-8 w-full max-w-sm">
+              <p className="text-xs text-gray-500 mb-2 flex items-center justify-center gap-1">
+                Match me with:
+                {!isPremium && <span title="Premium feature">🔒</span>}
+              </p>
+             <div className="grid grid-cols-3 gap-3 mt-4">
+  {[
+    { label: "male", icon: "👨" },
+    { label: "female", icon: "👩" },
+    { label: "other", icon: "🌈" },
+  ].map(({ label, icon }) => (
+    <button
+      key={label}
+      onClick={() => toggleGenderPreference(label)}
+      className={`h-12 rounded-xl border font-medium transition-all ${
+        isPremium && genderPreference.includes(label)
+          ? "bg-blue-600 text-white border-blue-600"
+          : isDark
+          ? "bg-gray-900 border-gray-800 text-gray-300"
+          : "bg-white border-gray-200 text-gray-700 hover:border-blue-400"
+      }`}
+    >
+      <span className="mr-1">{icon}</span>
+      {label}
+    </button>
+  ))}
+</div> 
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                {isPremium
+                  ? "Leave all unselected to match with anyone."
+                  : "Tap any option to unlock gender filtering."}
+              </p>
+
+              {/* PRIORITY MATCH indicator */}
+              <button
+                onClick={() => !isPremium && setShowPremiumModal(true)}
+                className="mt-4 w-full flex items-center justify-center gap-2 text-xs text-gray-500"
+              >
+                {isPremium ? (
+                  <span className="text-green-400">
+                    ⭐ Priority Match active — you're matched first
+                  </span>
+                ) : (
+                  <span className="hover:text-gray-300">
+                    ⭐ Priority Match 🔒 — get matched faster
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         ) : messages.length === 0 && status === "Stranger skipped this chat" ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
           {strangerProfile && (
   <img
+
+    referrerPolicy="no-referrer"
     src={strangerProfile.avatarUrl}
     alt={strangerProfile.name}
     className="w-24 h-24 rounded-full border border-gray-700 mb-6"
@@ -386,6 +567,9 @@ export default function ChatPage() {
   <div className="px-4 pb-2 flex items-center gap-3">
     
     <img
+
+    
+      referrerPolicy="no-referrer"
       src={strangerProfile.avatarUrl}
       alt={strangerProfile.name}
       className="w-8 h-8 rounded-full border border-gray-700"
@@ -404,45 +588,86 @@ export default function ChatPage() {
 )}  
         <div className="px-4 pb-2 text-sm font-medium">
          {status === "Connected" && strangerProfile && (
-  <div className="flex items-center gap-3">
-    <img
-      src={strangerProfile.avatarUrl}
-      alt={strangerProfile.name}
-      className="w-8 h-8 rounded-full border border-gray-700"
-    />
-
-    <div className="flex flex-col">
-      <span className="text-white text-sm font-semibold">
-        {strangerProfile.name}
-      </span>
-
-      <span className="text-green-400 text-xs flex items-center gap-1">
-        <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-        Online
-      </span>
-    </div>
-
+  <div className="relative flex items-center gap-3">
     <button
-      onClick={() => {
-        if (!strangerUserId) return;
-
-        if (strangerIsFriend) {
-          friends.removeFriend(strangerUserId);
-        } else {
-          friends.sendFriendRequest();
-        }
-      }}
-      disabled={!strangerUserId}
-      className={`ml-auto px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-        !strangerUserId
-          ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-          : strangerIsFriend
-          ? "bg-red-900/60 hover:bg-red-900 text-red-200"
-          : "bg-green-700 hover:bg-green-600"
-      }`}
+      onClick={() => setShowStrangerMenu((prev) => !prev)}
+      className="relative flex items-center gap-3 shrink-0"
+      aria-label="Stranger options"
+      aria-expanded={showStrangerMenu}
     >
-      {strangerIsFriend ? "Unfriend" : "+ Friend"}
+      <div className="relative shrink-0">
+        <img
+
+          referrerPolicy="no-referrer"
+          src={strangerProfile.avatarUrl}
+          alt={strangerProfile.name}
+          className={`w-8 h-8 rounded-full border hover:scale-110 transition ${isDark ? "border-gray-700" : "border-gray-300"}`}
+        />
+
+        {strangerProfile.isPremium && (
+          <span className="absolute -top-1 -right-1 text-xs" title="Premium">
+            👑
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col items-start">
+        <span className={`text-sm font-semibold ${isDark ? "text-white" : "text-black"}`}>
+          {strangerProfile.name}
+        </span>
+
+        <span className="text-green-400 text-xs flex items-center gap-1">
+          <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+          Online
+        </span>
+      </div>
     </button>
+
+    {/* Click-outside backdrop */}
+    {showStrangerMenu && (
+      <div className="fixed inset-0 z-30" onClick={() => setShowStrangerMenu(false)} />
+    )}
+
+    {/* DROPDOWN — drops UP from the stranger's avatar (this row sits
+        right below the header, so opening downward would crowd the
+        message list; opening up uses the space under the header) */}
+    {showStrangerMenu && (
+      <div
+        className={`absolute left-0 bottom-full mb-2 w-48 rounded-2xl border overflow-hidden z-40 animate-in fade-in slide-in-from-bottom-2 duration-200 ${
+          isDark ? "bg-gray-950 border-gray-800" : "bg-white border-gray-200 shadow-xl"
+        }`}
+      >
+        <button
+          onClick={() => {
+            if (!strangerUserId) return;
+            if (strangerIsFriend) {
+              friends.removeFriend(strangerUserId);
+            } else {
+              friends.sendFriendRequest();
+            }
+            setShowStrangerMenu(false);
+          }}
+          disabled={!strangerUserId}
+          className={`w-full text-left flex items-center gap-2 px-4 py-3 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${
+            isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"
+          }`}
+        >
+          {strangerIsFriend ? "💔 Remove Friend" : "➕ Add Friend"}
+        </button>
+
+        <button
+          onClick={() => {
+            socket.emit("blockUser");
+            setShowStrangerMenu(false);
+          }}
+          className={`w-full text-left flex items-center gap-2 px-4 py-3 text-sm font-medium border-t transition text-red-400 ${
+            isDark ? "border-gray-800 hover:bg-gray-800" : "border-gray-200 hover:bg-gray-100"
+          }`}
+        >
+          🚫 Block
+        </button>
+      </div>
+    )}
   </div>
 )} 
 
@@ -461,6 +686,8 @@ export default function ChatPage() {
         {status === "Stranger disconnected" && strangerProfile && (
   <div className="flex items-center gap-2 text-red-400">
     <img
+
+      referrerPolicy="no-referrer"
       src={strangerProfile.avatarUrl}
       alt={strangerProfile.name}
       className="w-8 h-8 rounded-full"
@@ -475,6 +702,8 @@ export default function ChatPage() {
  {status === "Stranger skipped this chat" && strangerProfile && (
   <div className="flex items-center gap-2 text-orange-400">
     <img
+
+      referrerPolicy="no-referrer"
       src={strangerProfile.avatarUrl}
       alt={strangerProfile.name}
       className="w-8 h-8 rounded-full"
@@ -490,7 +719,13 @@ export default function ChatPage() {
 
       {showProfileMenu && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl p-6 w-80 border border-gray-800 relative flex flex-col min-h-[420px]">
+         <div
+  className={`rounded-2xl p-6 w-80 relative flex flex-col min-h-[420px] ${
+    isDark
+      ? "bg-gray-900 border border-gray-800 text-white"
+      : "bg-white border border-gray-200 text-black shadow-xl"
+  }`}
+> 
             <button
               onClick={() => setShowProfileMenu(false)}
               className="absolute top-3 right-4 text-gray-400 hover:text-white text-xl"
@@ -500,6 +735,8 @@ export default function ChatPage() {
 
             <div className="flex flex-col items-center mb-6">
               <img
+
+                referrerPolicy="no-referrer"
                 src={profile.image}
                 alt="Profile"
                 className="w-20 h-20 rounded-full border border-gray-700 mb-3"
@@ -528,10 +765,36 @@ export default function ChatPage() {
             </div>
 
             <button
+              onClick={() => {
+                socket.emit("getBlockedUsers");
+                setShowBlockedUsersModal(true);
+                setShowProfileMenu(false);
+              }}
+            className={`w-full py-2 rounded-xl mt-4 font-semibold text-sm ${
+  isDark
+    ? "bg-gray-800 hover:bg-gray-700 border border-gray-700"
+    : "bg-gray-100 hover:bg-gray-200 border border-gray-300"
+}`}
+            >
+              🚫 Blocked Users
+            </button>
+
+            <button
               onClick={handleLogout}
-              className="w-full bg-red-600 hover:bg-red-700 py-2 rounded-xl mt-4 font-semibold"
+              className="w-full bg-red-600 hover:bg-red-700 py-2 rounded-xl mt-3 font-semibold"
             >
               {profile.isGuest ? "End Guest Session" : "Logout"}
+            </button>
+
+            <button
+              onClick={handleDevTogglePremium}
+             className={`w-full py-2 rounded-xl mt-2 text-xs ${
+  isDark
+    ? "bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-400"
+    : "bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600"
+}`} 
+            >
+              {profile.isPremium ? "Remove Premium (dev)" : "Grant Premium (dev)"}
             </button>
           </div>
         </div>
@@ -539,7 +802,13 @@ export default function ChatPage() {
 
       {showReport && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl p-6 w-80">
+        <div
+  className={`rounded-2xl p-6 w-80 ${
+    isDark
+      ? "bg-gray-900 text-white"
+      : "bg-white text-black shadow-xl"
+  }`}
+>  
             <h2 className="text-xl font-bold mb-4">Report User</h2>
 
             <div className="space-y-3">
@@ -565,7 +834,11 @@ export default function ChatPage() {
                   setShowReport(false);
                   setReportReason("");
                 }}
-                className="flex-1 bg-gray-700 rounded-full py-2"
+               className={`flex-1 rounded-full py-2 ${
+  isDark
+    ? "bg-gray-700 hover:bg-gray-600"
+    : "bg-gray-200 hover:bg-gray-300"
+}`}
               >
                 Cancel
               </button>
@@ -600,6 +873,9 @@ export default function ChatPage() {
       </h2>
 
       <img
+
+
+        referrerPolicy="no-referrer"
         src={strangerProfile.avatarUrl}
         alt={strangerProfile.name}
         className="w-24 h-24 rounded-full border-2 border-green-500 mb-4"
@@ -620,8 +896,10 @@ export default function ChatPage() {
       {/* INCOMING FRIEND REQUEST */}
       {friends.incomingRequest && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-gray-900 rounded-2xl p-6 w-80 text-center border border-gray-800">
+          <div className={`rounded-2xl p-6 w-80 text-center border ${isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200 shadow-xl"}`}>
             <img
+
+              referrerPolicy="no-referrer"
               src={friends.incomingRequest.fromAvatarUrl}
               alt={friends.incomingRequest.fromDisplayName}
               className="w-16 h-16 rounded-full mx-auto mb-3"
@@ -631,21 +909,21 @@ export default function ChatPage() {
               {friends.incomingRequest.fromDisplayName}
             </h2>
 
-            <p className="text-gray-400 text-sm mt-1">
+            <p className={`text-sm mt-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
               wants to add you as a friend
             </p>
 
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => friends.respondToRequest(false)}
-                className="flex-1 bg-gray-700 hover:bg-gray-600 rounded-full py-2"
+                className={`flex-1 rounded-full py-2 ${isDark ? "bg-gray-700 hover:bg-gray-600 text-white" : "bg-gray-200 hover:bg-gray-300 text-black"}`}
               >
                 Decline
               </button>
 
               <button
                 onClick={() => friends.respondToRequest(true)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-full py-2"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full py-2"
               >
                 Accept
               </button>
@@ -656,8 +934,109 @@ export default function ChatPage() {
 
       {/* FRIEND REQUEST TOAST */}
       {friends.requestNotice && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-800 border border-gray-700 px-4 py-2 rounded-full text-sm z-50 shadow-lg">
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 border px-4 py-2 rounded-full text-sm z-50 shadow-lg ${
+          isDark ? "bg-gray-800 border-gray-700 text-white" : "bg-white border-gray-200 text-black"
+        }`}>
           {friends.requestNotice}
+        </div>
+      )}
+
+      {/* PREMIUM FEATURE NOTICE TOAST */}
+      {premiumNotice && (
+        <div className={`fixed top-16 left-1/2 -translate-x-1/2 border px-4 py-2 rounded-full text-sm z-50 shadow-lg ${
+          isDark ? "bg-gray-800 border-yellow-700 text-yellow-200" : "bg-white border-yellow-400 text-yellow-700"
+        }`}>
+          👑 {premiumNotice}
+        </div>
+      )}
+
+      {/* UNLOCK PREMIUM MODAL */}
+      {showPremiumModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
+          <div className="bg-gray-900 rounded-2xl p-6 w-80 text-center border border-yellow-700/40">
+            <div className="text-4xl mb-2">👑</div>
+
+            <h2 className="font-bold text-xl">Unlock Premium</h2>
+
+            <ul className="text-sm text-gray-300 mt-4 space-y-2 text-left">
+              <li>✓ Gender preferences</li>
+              <li>✓ Priority matching</li>
+              <li>✓ Unlimited media uploads</li>
+              <li>✓ Future premium features</li>
+            </ul>
+
+            <button
+              onClick={() => {
+                handleDevTogglePremium();
+                setShowPremiumModal(false);
+              }}
+              className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-semibold rounded-full py-3 mt-6"
+            >
+              Upgrade
+            </button>
+
+            <button
+              onClick={() => setShowPremiumModal(false)}
+              className="w-full text-gray-400 hover:text-white text-sm mt-3"
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* BLOCKED USERS MODAL */}
+      {showBlockedUsersModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
+          <div className={`rounded-2xl p-6 w-80 max-h-[70vh] flex flex-col text-center border ${isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"}`}>
+            <div className="text-4xl mb-2">🚫</div>
+
+            <h2 className="font-bold text-xl">Blocked Users</h2>
+
+            {blockedUsers.length === 0 ? (
+              <p className={`text-sm mt-3 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                You haven't blocked anyone yet.
+              </p>
+            ) : (
+              <div className="mt-4 flex-1 overflow-y-auto space-y-2 text-left">
+                {blockedUsers.map((u) => (
+                  <div
+                    key={u.userId}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-xl ${isDark ? "bg-gray-800" : "bg-gray-100"}`}
+                  >
+                    <div className="relative shrink-0">
+                      <img
+
+                        referrerPolicy="no-referrer"
+                        src={u.avatarUrl || "/default-avatar.png"}
+                        alt={u.displayName}
+                        className="w-8 h-8 rounded-full"
+                      />
+                      {u.isPremium && (
+                        <span className="absolute -top-1 -right-1 text-[10px]" title="Premium">
+                          👑
+                        </span>
+                      )}
+                    </div>
+                    <span className="flex-1 text-sm truncate">{u.displayName}</span>
+                    <button
+                      onClick={() => socket.emit("unblockUser", { blockedUserId: u.userId })}
+                      className="text-xs font-semibold text-blue-400 hover:text-blue-300 whitespace-nowrap"
+                    >
+                      Unblock
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowBlockedUsersModal(false)}
+              className="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-full py-3 mt-6 shrink-0"
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
 
@@ -674,16 +1053,38 @@ export default function ChatPage() {
         onSendFile={friends.sendFriendFile}
         onCloseChat={friends.closeFriendChat}
         unreadFriendIds={friends.unreadFriendIds}
+        isPremium={isPremium}
+        onPremiumRequired={() => setShowPremiumModal(true)}
+        onRemoveFriend={friends.removeFriend}
+        onBlockFriend={friends.blockFriend}
+        isDark={isDark}
       />
 
       <footer className="border-t border-gray-800 p-3 sm:p-4">
-        <div className="flex gap-2 sm:gap-3">
-          {/* NEXT BUTTON */}
+        <div className="flex items-center gap-2 sm:gap-3">
+        {/* NEXT BUTTON */}
+<button
+  onClick={handleNext}
+  className={`h-9 shrink-0 px-3 rounded-full text-sm font-semibold whitespace-nowrap ${
+    isDark
+      ? "bg-red-600 hover:bg-red-700 text-white"
+      : "bg-red-500 hover:bg-red-600 text-white shadow-sm"
+  }`}
+>
+  {confirmNext ? "Confirm" : "Next"}
+</button>  
+
+          {/* UNDO BUTTON — icon-only so it doesn't crowd the message input */}
           <button
-            onClick={handleNext}
-            className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-full text-sm font-semibold whitespace-nowrap"
+            onClick={() => (isPremium ? handleUndoSkip() : setShowPremiumModal(true))}
+            title={isPremium ? "Go back to the last stranger" : "Undo — premium feature"}
+            className={`h-9 w-9 shrink-0 flex items-center justify-center rounded-full text-sm border ${
+  isDark
+    ? "bg-gray-800 hover:bg-gray-700 border-gray-700"
+    : "bg-white hover:bg-gray-100 border-gray-300 shadow-sm"
+}`}
           >
-            {confirmNext ? "Confirm" : "Next"}
+            ↩{!isPremium && <span className="text-[10px] ml-0.5">🔒</span>}
           </button>
 
           {/* MESSAGE INPUT with attach button inside, at the right */}
@@ -720,12 +1121,23 @@ export default function ChatPage() {
                   ? "Type a message..."
                   : "Waiting for stranger..."
               }
-              className="w-full rounded-full bg-gray-900 pl-4 pr-11 py-3 outline-none"
+              className={`w-full rounded-full pl-4 pr-11 py-3 outline-none border transition ${
+                isDark
+                  ? "bg-gray-900 text-white placeholder-gray-500 border-gray-800"
+                  : "bg-gray-100 text-black placeholder-gray-400 border-gray-300"
+              }`}
             />
 
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                if (!isPremium) {
+                  setShowPremiumModal(true);
+                  return;
+                }
+                fileInputRef.current?.click();
+              }}
               disabled={status !== "Connected" || isUploading}
+              title={!isPremium ? "Sending photos/videos is a premium feature" : undefined}
               className={`absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full text-sm ${
                 status === "Connected" && !isUploading
                   ? "hover:bg-gray-700 text-gray-300"
@@ -740,10 +1152,14 @@ export default function ChatPage() {
           <button
             onClick={sendMessage}
             disabled={status !== "Connected"}
-            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap ${
-              status === "Connected"
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-gray-700 cursor-not-allowed"
+            className={`h-9 shrink-0 px-4 rounded-full text-sm font-semibold whitespace-nowrap ${
+            status === "Connected"
+  ? isDark
+    ? "bg-blue-600 hover:bg-blue-700"
+    : "bg-blue-500 hover:bg-blue-600 text-white"
+  : isDark
+  ? "bg-gray-700 cursor-not-allowed"
+  : "bg-gray-300 text-gray-500 cursor-not-allowed"  
             }`}
           >
             Send

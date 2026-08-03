@@ -5,6 +5,7 @@ import type { Friend, FriendMessage } from "@/app/hooks/useFriends";
 import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
 
 type FriendsPanelProps = {
+  isDark: boolean;
   isOpen: boolean;
   onClose: () => void;
   friends: Friend[];
@@ -23,6 +24,10 @@ type FriendsPanelProps = {
   }) => void;
   onCloseChat: () => void;
   unreadFriendIds?: Set<string>;
+  isPremium?: boolean;
+  onPremiumRequired?: () => void;
+  onRemoveFriend?: (friendUserId: string) => void;
+  onBlockFriend?: (friendUserId: string) => void;
 };
 
 export default function FriendsPanel({
@@ -35,9 +40,15 @@ export default function FriendsPanel({
   onSendFile,
   onCloseChat,
   unreadFriendIds,
+  isPremium,
+  onPremiumRequired,
+  onRemoveFriend,
+  onBlockFriend,
+  isDark,
 }: FriendsPanelProps) {
   const [draft, setDraft] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [openMenuFor, setOpenMenuFor] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +76,11 @@ export default function FriendsPanel({
 
     if (!file) return;
 
+    if (!isPremium) {
+      onPremiumRequired?.();
+      return;
+    }
+
     setIsUploading(true);
 
     try {
@@ -77,6 +93,11 @@ export default function FriendsPanel({
     }
   };
 
+  // Border color used for the little dots/badges layered on avatars —
+  // needs to match whatever background sits behind them so the dot
+  // reads as a clean cutout in both themes
+  const avatarBadgeBorder = isDark ? "border-gray-950" : "border-white";
+
   return (
     <div className="fixed inset-0 z-50 flex justify-start">
       <div
@@ -84,31 +105,45 @@ export default function FriendsPanel({
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-sm bg-gray-950 border-r border-gray-800 h-full flex flex-col">
+      <div
+        className={`relative w-full max-w-sm h-full flex flex-col border-r transition-colors ${
+          isDark
+            ? "bg-gray-950 border-gray-800 text-white"
+            : "bg-white border-gray-200 text-black shadow-xl"
+        }`}
+      >
         {activeFriendChat ? (
           <>
-            <div className="flex items-center gap-3 p-4 border-b border-gray-800">
+            <div className={`flex items-center gap-3 p-4 border-b ${isDark ? "border-gray-800" : "border-gray-200"}`}>
               <button
                 onClick={onCloseChat}
-                className="text-gray-400 hover:text-white"
+                className={isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"}
               >
                 ←
               </button>
 
               <div className="relative">
                 <img
+
+                  referrerPolicy="no-referrer"
                   src={activeFriendChat.friend.avatarUrl}
                   alt={activeFriendChat.friend.displayName}
                   className="w-8 h-8 rounded-full"
                 />
 
                 <span
-                  className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-gray-950 ${
+                  className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 ${avatarBadgeBorder} ${
                     activeFriendChat.friend.isOnline
                       ? "bg-green-500"
                       : "bg-red-500"
                   }`}
                 />
+
+                {activeFriendChat.friend.isPremium && (
+                  <span className="absolute -top-1 -right-1 text-xs" title="Premium">
+                    👑
+                  </span>
+                )}
               </div>
 
               <span className="font-semibold">
@@ -117,7 +152,7 @@ export default function FriendsPanel({
 
               <button
                 onClick={onClose}
-                className="ml-auto text-gray-400 hover:text-white text-xl"
+                className={`ml-auto text-xl ${isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"}`}
               >
                 ✕
               </button>
@@ -125,7 +160,7 @@ export default function FriendsPanel({
 
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
               {activeFriendChat.messages.length === 0 && (
-                <p className="text-gray-500 text-sm text-center mt-6">
+                <p className={`text-sm text-center mt-6 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                   No messages yet. Say hi!
                 </p>
               )}
@@ -140,13 +175,17 @@ export default function FriendsPanel({
                   <div
                     className={`rounded-2xl px-3 py-2 max-w-[75%] text-sm ${
                       msg.sender === "me"
-                        ? "bg-blue-600"
-                        : "bg-gray-800"
+                        ? "bg-blue-600 text-white"
+                        : isDark
+                        ? "bg-gray-800 text-white"
+                        : "bg-gray-200 text-black"
                     }`}
                   >
                     {msg.fileUrl ? (
                       msg.fileType === "image" ? (
                         <img
+
+                          referrerPolicy="no-referrer"
                           src={msg.fileUrl}
                           alt={msg.fileName ?? "image"}
                           className="rounded-lg max-w-full max-h-56 object-cover"
@@ -177,7 +216,7 @@ export default function FriendsPanel({
               <div ref={bottomRef} />
             </div>
 
-            <div className="p-3 border-t border-gray-800 flex gap-2">
+            <div className={`p-3 border-t flex gap-2 ${isDark ? "border-gray-800" : "border-gray-200"}`}>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -194,16 +233,29 @@ export default function FriendsPanel({
                     if (e.key === "Enter") handleSend();
                   }}
                   placeholder="Message..."
-                  className="w-full rounded-full bg-gray-900 border border-gray-800 pl-4 pr-11 py-2 text-sm outline-none"
+                  className={`w-full rounded-full border pl-4 pr-11 py-2 text-sm outline-none transition ${
+                    isDark
+                      ? "bg-gray-900 border-gray-800 text-white placeholder-gray-500"
+                      : "bg-gray-100 border-gray-300 text-black placeholder-gray-400"
+                  }`}
                 />
 
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    if (!isPremium) {
+                      onPremiumRequired?.();
+                      return;
+                    }
+                    fileInputRef.current?.click();
+                  }}
                   disabled={isUploading}
+                  title={!isPremium ? "Sending photos/videos is a premium feature" : undefined}
                   className={`absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-sm ${
                     isUploading
-                      ? "text-gray-600 cursor-not-allowed"
-                      : "hover:bg-gray-700 text-gray-300"
+                      ? "text-gray-500 cursor-not-allowed"
+                      : isDark
+                      ? "hover:bg-gray-700 text-gray-300"
+                      : "hover:bg-gray-200 text-gray-600"
                   }`}
                 >
                   {isUploading ? "..." : "📎"}
@@ -212,7 +264,7 @@ export default function FriendsPanel({
 
               <button
                 onClick={handleSend}
-                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full text-sm font-semibold"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-semibold"
               >
                 Send
               </button>
@@ -220,12 +272,12 @@ export default function FriendsPanel({
           </>
         ) : (
           <>
-            <div className="flex items-center p-4 border-b border-gray-800">
+            <div className={`flex items-center p-4 border-b ${isDark ? "border-gray-800" : "border-gray-200"}`}>
               <h2 className="font-bold text-lg">Friends</h2>
 
               <button
                 onClick={onClose}
-                className="ml-auto text-gray-400 hover:text-white text-xl"
+                className={`ml-auto text-xl ${isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"}`}
               >
                 ✕
               </button>
@@ -233,38 +285,118 @@ export default function FriendsPanel({
 
             <div className="flex-1 overflow-y-auto">
               {friends.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center mt-8 px-6">
+                <p className={`text-sm text-center mt-8 px-6 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
                   No friends yet. Add someone while chatting to start
                   building your list!
                 </p>
               ) : (
                 friends.map((friend) => (
-                  <button
+                  <div
                     key={friend.userId}
-                    onClick={() => onOpenChat(friend)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-900 transition text-left"
+                    className={`w-full flex items-center gap-2 px-4 py-3 transition ${
+                      isDark ? "hover:bg-gray-900" : "hover:bg-gray-100"
+                    }`}
                   >
-                    <div className="relative">
-                      <img
-                        src={friend.avatarUrl}
-                        alt={friend.displayName}
-                        className="w-10 h-10 rounded-full"
-                      />
+                    <button
+                      onClick={() => onOpenChat(friend)}
+                      className="shrink-0"
+                    >
+                      <div className="relative">
+                        <img
 
-                      <span
-                        className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-gray-950 ${
-                          friend.isOnline ? "bg-green-500" : "bg-red-500"
+                          referrerPolicy="no-referrer"
+                          src={friend.avatarUrl}
+                          alt={friend.displayName}
+                          className="w-10 h-10 rounded-full"
+                        />
+
+                        <span
+                          className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 ${avatarBadgeBorder} ${
+                            friend.isOnline ? "bg-green-500" : "bg-red-500"
+                          }`}
+                        />
+
+                        {friend.isPremium && (
+                          <span className="absolute -top-1 -right-1 text-xs" title="Premium">
+                            👑
+                          </span>
+                        )}
+                      </div>
+                    </button>
+
+                    {/* THREE-DOT MENU — Remove Friend / Block User */}
+                    <div className="relative shrink-0">
+                      <button
+                        onClick={() =>
+                          setOpenMenuFor((prev) =>
+                            prev === friend.userId ? null : friend.userId
+                          )
+                        }
+                        aria-label="Friend options"
+                        aria-expanded={openMenuFor === friend.userId}
+                        className={`w-6 h-6 flex items-center justify-center rounded-full text-lg leading-none ${
+                          isDark ? "hover:bg-gray-800" : "hover:bg-gray-200"
                         }`}
-                      />
+                      >
+                        ⋮
+                      </button>
+
+                      {openMenuFor === friend.userId && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-30"
+                            onClick={() => setOpenMenuFor(null)}
+                          />
+
+                          <div
+                            className={`absolute left-0 top-full mt-1 w-40 rounded-xl border overflow-hidden z-40 animate-in fade-in slide-in-from-top-2 duration-200 ${
+                              isDark
+                                ? "bg-gray-950 border-gray-800"
+                                : "bg-white border-gray-200 shadow-xl"
+                            }`}
+                          >
+                            <button
+                              onClick={() => {
+                                onRemoveFriend?.(friend.userId);
+                                setOpenMenuFor(null);
+                              }}
+                              className={`w-full text-left px-4 py-2 text-sm font-medium transition ${
+                                isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"
+                              }`}
+                            >
+                              💔 Remove Friend
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                onBlockFriend?.(friend.userId);
+                                setOpenMenuFor(null);
+                              }}
+                              className={`w-full text-left px-4 py-2 text-sm font-medium border-t transition text-red-400 ${
+                                isDark
+                                  ? "border-gray-800 hover:bg-gray-800"
+                                  : "border-gray-200 hover:bg-gray-100"
+                              }`}
+                            >
+                              🚫 Block User
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
 
-                    <span className="font-medium flex items-center gap-2">
-                      {friend.displayName}
-                      {unreadFriendIds?.has(friend.userId) && (
-                        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                      )}
-                    </span>
-                  </button>
+                    <button
+                      onClick={() => onOpenChat(friend)}
+                      className="flex-1 text-left"
+                    >
+                      <span className="font-medium flex items-center gap-2">
+                        {friend.displayName}
+                        {unreadFriendIds?.has(friend.userId) && (
+                          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                        )}
+                      </span>
+                    </button>
+                  </div>
                 ))
               )}
             </div>

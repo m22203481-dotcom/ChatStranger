@@ -14,6 +14,7 @@ export type Friend = {
   displayName: string;
   avatarUrl: string;
   isOnline?: boolean;
+  isPremium?: boolean;
   isUnread?: boolean;
   lastMessageAt?: number | null;
 };
@@ -34,7 +35,9 @@ type ActiveFriendChat = {
   messages: FriendMessage[];
 };
 
-export default function useFriends() {
+export default function useFriends({
+  onMediaBlocked,
+}: { onMediaBlocked?: () => void } = {}) {
   const [incomingRequest, setIncomingRequest] =
     useState<FriendRequestReceived | null>(null);
 
@@ -222,6 +225,10 @@ export default function useFriends() {
       }
     );
 
+    socket.on("friendMediaBlocked", () => {
+      onMediaBlocked?.();
+    });
+
     return () => {
       socket.off("friendRequestReceived");
       socket.off("friendRequestSent");
@@ -232,6 +239,7 @@ export default function useFriends() {
       socket.off("friendChatOpened");
       socket.off("receiveFriendMessage");
       socket.off("friendMessageNotification");
+      socket.off("friendMediaBlocked");
     };
   }, []);
 
@@ -259,6 +267,10 @@ export default function useFriends() {
 
   const removeFriend = useCallback((friendUserId: string) => {
     socket.emit("removeFriend", { friendUserId });
+  }, []);
+
+  const blockFriend = useCallback((friendUserId: string) => {
+    socket.emit("blockFriend", { friendUserId });
   }, []);
 
   const openFriendChat = useCallback((friend: Friend) => {
@@ -352,6 +364,7 @@ export default function useFriends() {
     respondToRequest,
     loadFriendsList,
     removeFriend,
+    blockFriend,
     openFriendChat,
     sendFriendMessage,
     sendFriendFile,
