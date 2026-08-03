@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import Friendship from "../models/Friendship.js";
 import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
+import Block from "../models/Block.js";
 
 import {
     addUser,
@@ -13,7 +14,7 @@ import {
     addToQueue,
     removeFromQueue,
     getNextPair,
-    blockPair
+    unblockPair
 } from "../socket/queue.js";
 
 import {
@@ -21,6 +22,33 @@ import {
     removeRoom,
     getRoom
 } from "../socket/rooms.js";
+
+// Returns the persistent user ids that should never be matched with
+// `userId` — people they've blocked, and people who've blocked them.
+async function getBlockedUserIds(userId) {
+
+    if (!userId) return [];
+
+    try {
+
+        const blocks = await Block.find({
+            $or: [{ blocker: userId }, { blocked: userId }],
+        });
+
+        return blocks.map((b) =>
+            b.blocker.toString() === userId
+                ? b.blocked.toString()
+                : b.blocker.toString()
+        );
+
+    } catch (error) {
+
+        console.error("GET BLOCKED USER IDS ERROR:", error);
+        return [];
+
+    }
+
+}
 
 // Resolves whoever is on the other end of a socket connection to a real
 // Mongo User document — works for both Google and anonymous/guest sessions
@@ -122,6 +150,31 @@ export default function registerSocketEvents(io) {
     const socketInterests = new Map();
     const socketProfiles = new Map();
 
+    // Returns the stored {name, avatarUrl} profile for a socket, plus its
+    // CURRENT isPremium status read live off the socket itself — so if
+    // someone upgrades mid-chat (or via the dev toggle), the badge the
+    // other person sees stays accurate rather than reflecting a stale
+    // snapshot taken back when setProfile first ran.
+    function getStrangerPayload(socketId) {
+
+        const profile = socketProfiles.get(socketId);
+        if (!profile) return profile;
+
+        const liveSocket = io.sockets.sockets.get(socketId);
+
+        return { ...profile, isPremium: Boolean(liveSocket?.isPremium) };
+
+    }
+
+    // Remembers each premium socket's chosen gender filter, same reuse
+    // pattern as socketInterests (so "Next" reuses it without resending)
+    const socketGenderPreference = new Map();
+
+    // Premium-only "Undo Next": socketId -> { partnerSocketId, sharedTags,
+    // expiresAt }, set right when someone skips, cleared on use/expiry
+    const lastSkipped = new Map();
+    const UNDO_GRACE_MS = 30 * 1000;
+
     // Reconnect grace period: if someone's tab closes/loses connection
     // mid-chat, they have this long to come back and resume the SAME
     // chat before it's treated as a real disconnect
@@ -187,6 +240,8 @@ export default function registerSocketEvents(io) {
                 if (dbUser) {
 
                     socket.userId = dbUser._id.toString();
+                    socket.isPremium = Boolean(dbUser.isPremium);
+                    socket.gender = dbUser.gender || null;
 
                     // A personal room so we can reach this user by ID even
                     // if they reconnect on a different socket later
@@ -290,12 +345,12 @@ export default function registerSocketEvents(io) {
                     socket.emit("reconnected", {
                         room: pending.room,
                         sharedTags: roomSharedTags.get(pending.room) ?? [],
-                        stranger: socketProfiles.get(partnerSocket.id),
+                        stranger: getStrangerPayload(partnerSocket.id),
                         strangerUserId: partnerSocket.userId ?? null,
                     });
 
                     partnerSocket.emit("strangerReconnected", {
-                        stranger: socketProfiles.get(socket.id),
+                        stranger: getStrangerPayload(socket.id),
                     });
 
                     console.log(
@@ -328,9 +383,26 @@ export default function registerSocketEvents(io) {
 
             socketInterests.set(socket.id, interests);
 
+            // Gender filter is a premium-only feature — non-premium
+            // sockets silently get an empty filter (no restriction)
+            // regardless of what a tampered client might send.
+            const genderPreference = socket.isPremium
+                ? (payload?.genderPreference ?? socketGenderPreference.get(socket.id) ?? [])
+                : [];
+
+            socketGenderPreference.set(socket.id, genderPreference);
+
+            const blockedUserIds = await getBlockedUserIds(socket.userId);
+            console.log("QUEUE DEBUG:", socket.id, "userId=", socket.userId, "blockedUserIds=", blockedUserIds);
+
             removeFromQueue(socket.id);
 
-            addToQueue(socket.id, interests, socket.userId ?? null);
+            addToQueue(socket.id, interests, socket.userId ?? null, {
+                isPremium: socket.isPremium,
+                gender: socket.gender,
+                genderPreference,
+                blockedUserIds,
+            });
 
             console.log("QUEUE ADD:", socket.id);
 
@@ -355,7 +427,7 @@ export default function registerSocketEvents(io) {
                 socketA.emit("matched", {
                     room,
                     sharedTags,
-                    stranger: socketProfiles.get(user2),
+                    stranger: getStrangerPayload(user2),
                     strangerUserId: socketB?.userId ?? null
                 });
             }
@@ -365,7 +437,7 @@ export default function registerSocketEvents(io) {
                 socketB.emit("matched", {
                     room,
                     sharedTags,
-                    stranger: socketProfiles.get(user1),
+                    stranger: getStrangerPayload(user1),
                     strangerUserId: socketA?.userId ?? null
                 });
             }
@@ -414,6 +486,15 @@ export default function registerSocketEvents(io) {
 
             if (!room) {
                 return;
+            }
+
+            // Sending media is premium-only; free users can still
+            // receive media a premium stranger sends them
+            if (payload?.fileUrl && !socket.isPremium) {
+
+                socket.emit("mediaBlocked");
+                return;
+
             }
 
             socket
@@ -543,7 +624,16 @@ export default function registerSocketEvents(io) {
 
                     if (otherUser) {
 
-                        blockPair(socket.id, otherUser);
+                        // Previously called blockPair(socket.id, otherUser)
+                        // here to permanently prevent A and B from being
+                        // rematched after a skip. Removed per request —
+                        // A and B can now be paired again on a future
+                        // search, same as anyone else in the queue.
+                        lastSkipped.set(socket.id, {
+                            partnerSocketId: otherUser,
+                            sharedTags: roomSharedTags.get(oldRoom) ?? [],
+                            expiresAt: Date.now() + UNDO_GRACE_MS,
+                        });
 
                         const otherSocket =
                             io.sockets.sockets.get(otherUser);
@@ -559,7 +649,7 @@ export default function registerSocketEvents(io) {
 
                             otherSocket.emit(
                                 "strangerSkipped",
-                                socketProfiles.get(socket.id)
+                                getStrangerPayload(socket.id)
                             );
 
                         }
@@ -580,8 +670,18 @@ export default function registerSocketEvents(io) {
             removeFromQueue(socket.id);
 
             const interests = socketInterests.get(socket.id) ?? [];
+            const genderPreference = socket.isPremium
+                ? (socketGenderPreference.get(socket.id) ?? [])
+                : [];
+            const blockedUserIds = await getBlockedUserIds(socket.userId);
+            console.log("QUEUE DEBUG:", socket.id, "userId=", socket.userId, "blockedUserIds=", blockedUserIds);
 
-            addToQueue(socket.id, interests, socket.userId ?? null);
+            addToQueue(socket.id, interests, socket.userId ?? null, {
+                isPremium: socket.isPremium,
+                gender: socket.gender,
+                genderPreference,
+                blockedUserIds,
+            });
 
             socket.emit("waiting");
 
@@ -605,7 +705,7 @@ export default function registerSocketEvents(io) {
                 socketA.emit("matched", {
                     room,
                     sharedTags,
-                    stranger: socketProfiles.get(user2),
+                    stranger: getStrangerPayload(user2),
                     strangerUserId: socketB?.userId ?? null
                 });
             }
@@ -615,7 +715,7 @@ export default function registerSocketEvents(io) {
                 socketB.emit("matched", {
                     room,
                     sharedTags,
-                    stranger: socketProfiles.get(user1),
+                    stranger: getStrangerPayload(user1),
                     strangerUserId: socketA?.userId ?? null
                 });
             }
@@ -631,7 +731,226 @@ export default function registerSocketEvents(io) {
 
         });
 
-        // ============ FRIEND REQUESTS ============
+        // UNDO NEXT (premium only) — go back to the stranger you just
+        // skipped, if they haven't already moved on to someone else
+        socket.on("undoSkip", async () => {
+
+            await socket.identityPromise;
+
+            if (!socket.isPremium) {
+                socket.emit("undoUnavailable", { reason: "premium_required" });
+                return;
+            }
+
+            const pending = lastSkipped.get(socket.id);
+
+            if (!pending || Date.now() > pending.expiresAt) {
+                lastSkipped.delete(socket.id);
+                socket.emit("undoUnavailable", { reason: "expired" });
+                return;
+            }
+
+            const partnerSocket = io.sockets.sockets.get(pending.partnerSocketId);
+
+            // Partner disconnected, or already talking to someone new —
+            // either way there's nothing to restore
+            if (!partnerSocket || userRooms.get(partnerSocket.id)) {
+                lastSkipped.delete(socket.id);
+                socket.emit("undoUnavailable", { reason: "partner_unavailable" });
+                return;
+            }
+
+            removeFromQueue(socket.id);
+            removeFromQueue(partnerSocket.id);
+            unblockPair(socket.id, partnerSocket.id);
+
+            lastSkipped.delete(socket.id);
+            lastSkipped.delete(partnerSocket.id);
+
+            const { room, socketA, socketB } = tryMatch(socket.id, partnerSocket.id);
+
+            roomSharedTags.set(room, pending.sharedTags);
+
+            socket.join(room);
+            partnerSocket.join(room);
+
+            socket.emit("matched", {
+                room,
+                sharedTags: pending.sharedTags,
+                stranger: getStrangerPayload(partnerSocket.id),
+                strangerUserId: partnerSocket.userId ?? null,
+            });
+
+            partnerSocket.emit("matched", {
+                room,
+                sharedTags: pending.sharedTags,
+                stranger: getStrangerPayload(socket.id),
+                strangerUserId: socket.userId ?? null,
+            });
+
+            console.log("UNDO SKIP: restored chat between", socket.id, "and", partnerSocket.id);
+
+        });
+
+        // DEV-ONLY: flip isPremium on/off for testing until real payments
+        // are wired up. Deliberately a no-op outside development.
+        socket.on("devTogglePremium", async () => {
+
+            if (process.env.NODE_ENV === "production") return;
+            if (!socket.userId) return;
+
+            try {
+
+                const user = await User.findById(socket.userId);
+
+                if (!user) return;
+
+                user.isPremium = !user.isPremium;
+                await user.save();
+
+                socket.isPremium = user.isPremium;
+
+                socket.emit("identityResolved", {
+                    userId: user._id,
+                    displayName: user.displayName,
+                    avatarUrl: user.avatarUrl,
+                    isPremium: user.isPremium,
+                    gender: user.gender,
+                });
+
+            } catch (error) {
+
+                console.error("DEV TOGGLE PREMIUM ERROR:", error);
+
+            }
+
+        });
+
+        // BLOCK — ends the current chat and permanently prevents this
+        // pair from being matched again (unlike blockPair, which is just
+        // a temporary skip-avoidance). Identifies the target the same
+        // way sendFriendRequest does: whoever is in the room right now.
+        socket.on("blockUser", async () => {
+
+            await socket.identityPromise;
+
+            if (!socket.userId) return;
+
+            const room = userRooms.get(socket.id);
+            if (!room) return;
+
+            const roomData = getRoom(room);
+            if (!roomData) return;
+
+            const otherSocketId = roomData.users.find((id) => id !== socket.id);
+            if (!otherSocketId) return;
+
+            const otherSocket = io.sockets.sockets.get(otherSocketId);
+            if (!otherSocket || !otherSocket.userId) return;
+
+            try {
+
+                await Block.updateOne(
+                    { blocker: socket.userId, blocked: otherSocket.userId },
+                    { $setOnInsert: { blocker: socket.userId, blocked: otherSocket.userId } },
+                    { upsert: true }
+                );
+
+            } catch (error) {
+
+                console.error("BLOCK USER ERROR:", error);
+                return;
+
+            }
+
+            // End the chat for both sides. The blocked person just sees
+            // a normal disconnect — they're never told they were blocked.
+            userRooms.delete(socket.id);
+            userRooms.delete(otherSocket.id);
+            removeRoom(room);
+
+            otherSocket.emit("strangerDisconnected", getStrangerPayload(socket.id));
+
+            socket.emit("userBlocked");
+
+            // The blocker automatically starts searching again
+            const interests = socketInterests.get(socket.id) ?? [];
+            const genderPreference = socket.isPremium
+                ? (socketGenderPreference.get(socket.id) ?? [])
+                : [];
+            const blockedUserIds = await getBlockedUserIds(socket.userId);
+            console.log("QUEUE DEBUG:", socket.id, "userId=", socket.userId, "blockedUserIds=", blockedUserIds);
+
+            addToQueue(socket.id, interests, socket.userId, {
+                isPremium: socket.isPremium,
+                gender: socket.gender,
+                genderPreference,
+                blockedUserIds,
+            });
+
+            console.log("BLOCKED:", socket.id, "blocked", otherSocket.id);
+
+        });
+
+        // Fetch the current user's blocked list (for the Blocked Users
+        // menu), with each entry's live display name/avatar
+        socket.on("getBlockedUsers", async () => {
+
+            await socket.identityPromise;
+
+            if (!socket.userId) {
+                socket.emit("blockedUsersList", []);
+                return;
+            }
+
+            try {
+
+                const blocks = await Block.find({ blocker: socket.userId });
+                const blockedIds = blocks.map((b) => b.blocked);
+
+                const blockedUsers = await User.find({ _id: { $in: blockedIds } });
+
+                socket.emit(
+                    "blockedUsersList",
+                    blockedUsers.map((u) => ({
+                        userId: u._id,
+                        displayName: u.displayName,
+                        avatarUrl: u.avatarUrl,
+                        isPremium: Boolean(u.isPremium),
+                    }))
+                );
+
+            } catch (error) {
+
+                console.error("GET BLOCKED USERS ERROR:", error);
+                socket.emit("blockedUsersList", []);
+
+            }
+
+        });
+
+        socket.on("unblockUser", async ({ blockedUserId }) => {
+
+            await socket.identityPromise;
+
+            if (!socket.userId || !blockedUserId) return;
+
+            try {
+
+                await Block.deleteOne({
+                    blocker: socket.userId,
+                    blocked: blockedUserId,
+                });
+
+                socket.emit("userUnblocked", { blockedUserId });
+
+            } catch (error) {
+
+                console.error("UNBLOCK USER ERROR:", error);
+
+            }
+
+        });
 
         socket.on("sendFriendRequest", async () => {
 
@@ -826,6 +1145,7 @@ export default function registerSocketEvents(io) {
                         displayName: f.displayName,
                         avatarUrl: f.avatarUrl,
                         isOnline: onlineUserCounts.has(friendId),
+                        isPremium: Boolean(f.isPremium),
                         isUnread,
                         lastMessageAt: conversation?.lastMessageAt
                             ? conversation.lastMessageAt.getTime()
@@ -873,6 +1193,44 @@ export default function registerSocketEvents(io) {
             } catch (error) {
 
                 console.error("REMOVE FRIEND ERROR:", error);
+
+            }
+
+        });
+
+        // BLOCK A FRIEND (from the friends list, not mid-chat) — ends the
+        // friendship the same way removeFriend does, and additionally
+        // creates a persistent Block record so they also show up in the
+        // Blocked Users list and can never be randomly matched again.
+        socket.on("blockFriend", async ({ friendUserId }) => {
+
+            if (!socket.userId || !friendUserId) return;
+
+            try {
+
+                await Block.updateOne(
+                    { blocker: socket.userId, blocked: friendUserId },
+                    { $setOnInsert: { blocker: socket.userId, blocked: friendUserId } },
+                    { upsert: true }
+                );
+
+                await Friendship.deleteOne({
+                    status: "accepted",
+                    $or: [
+                        { requester: socket.userId, recipient: friendUserId },
+                        { requester: friendUserId, recipient: socket.userId },
+                    ],
+                });
+
+                socket.emit("friendRemoved", { friendUserId });
+
+                io.to(`user-${friendUserId}`).emit("friendRemoved", {
+                    friendUserId: socket.userId,
+                });
+
+            } catch (error) {
+
+                console.error("BLOCK FRIEND ERROR:", error);
 
             }
 
@@ -947,6 +1305,11 @@ export default function registerSocketEvents(io) {
 
                 if (!socket.userId) return;
                 if (!text?.trim() && !fileUrl) return;
+
+                if (fileUrl && !socket.isPremium) {
+                    socket.emit("friendMediaBlocked");
+                    return;
+                }
 
                 try {
 
@@ -1082,6 +1445,8 @@ export default function registerSocketEvents(io) {
             userRooms.delete(socket.id);
             removeFromQueue(socket.id);
             socketInterests.delete(socket.id);
+            socketGenderPreference.delete(socket.id);
+            lastSkipped.delete(socket.id);
             socketProfiles.delete(socket.id);
             removeUser(socket.id);
 

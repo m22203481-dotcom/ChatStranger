@@ -9,13 +9,30 @@ const userInterests = new Map();
 // briefly leaves an old socket lingering in the queue).
 const socketOwners = new Map();
 
+// socketId -> { isPremium, gender, genderPreference } — premium/gender data
+// used for priority ordering and gender-filtered matching.
+const socketMeta = new Map();
+
 const blockedPairs = new Set();
 
 
-export function addToQueue(socketId, interests = [], userId = null) {
+export function addToQueue(socketId, interests = [], userId = null, options = {}) {
 
-    if (!waitingUsers.includes(socketId)) {
-        waitingUsers.push(socketId);
+    const { isPremium = false, gender = null, genderPreference = [] } = options;
+
+    const alreadyQueued = waitingUsers.includes(socketId);
+
+    if (!alreadyQueued) {
+
+        // Premium users get priority: they go to the FRONT of the queue
+        // instead of the back, so both matching passes below (which scan
+        // front-to-back) consider them before anyone waiting behind them.
+        if (isPremium) {
+            waitingUsers.unshift(socketId);
+        } else {
+            waitingUsers.push(socketId);
+        }
+
     }
 
     const cleanInterests = interests
@@ -23,6 +40,14 @@ export function addToQueue(socketId, interests = [], userId = null) {
         .filter((tag) => tag.length > 0);
 
     userInterests.set(socketId, cleanInterests);
+
+    socketMeta.set(socketId, {
+        isPremium: Boolean(isPremium),
+        gender: gender || null,
+        genderPreference: Array.isArray(genderPreference)
+            ? genderPreference.map((g) => String(g).toLowerCase())
+            : [],
+    });
 
     if (userId) {
         socketOwners.set(socketId, userId);
@@ -46,6 +71,7 @@ export function removeFromQueue(socketId) {
 
     userInterests.delete(socketId);
     socketOwners.delete(socketId);
+    socketMeta.delete(socketId);
 
     console.log(
         "QUEUE AFTER REMOVE:",
@@ -68,6 +94,40 @@ function isSamePerson(user1, user2) {
 }
 
 
+// True if neither side's gender preference (a premium-only filter) rules
+// out the other. A user with no preference set imposes no restriction —
+// only premium users can have a non-empty genderPreference in the first
+// place (enforced by the caller), but this function only cares about
+// what's actually stored here.
+function genderCompatible(user1, user2) {
+
+    const meta1 = socketMeta.get(user1) || {};
+    const meta2 = socketMeta.get(user2) || {};
+
+    const pref1 = meta1.genderPreference || [];
+    const pref2 = meta2.genderPreference || [];
+
+    if (pref1.length > 0) {
+
+        if (!meta2.gender || !pref1.includes(meta2.gender)) {
+            return false;
+        }
+
+    }
+
+    if (pref2.length > 0) {
+
+        if (!meta1.gender || !pref2.includes(meta1.gender)) {
+            return false;
+        }
+
+    }
+
+    return true;
+
+}
+
+
 export function blockPair(user1, user2) {
 
     blockedPairs.add(
@@ -77,6 +137,16 @@ export function blockPair(user1, user2) {
     blockedPairs.add(
         `${user2}:${user1}`
     );
+
+}
+
+
+// Reverses blockPair — used when "undoing" a skip so the same two people
+// can be matched with each other again.
+export function unblockPair(user1, user2) {
+
+    blockedPairs.delete(`${user1}:${user2}`);
+    blockedPairs.delete(`${user2}:${user1}`);
 
 }
 
@@ -121,6 +191,8 @@ export function getNextPair() {
 
             if (blockedPairs.has(`${user1}:${user2}`)) continue;
 
+            if (!genderCompatible(user1, user2)) continue;
+
             const shared = sharedInterests(user1, user2);
 
             if (shared.length > 0) {
@@ -130,6 +202,8 @@ export function getNextPair() {
 
                 userInterests.delete(user1);
                 userInterests.delete(user2);
+                socketMeta.delete(user1);
+                socketMeta.delete(user2);
 
                 return { pair: [user1, user2], sharedTags: shared };
             }
@@ -147,16 +221,19 @@ export function getNextPair() {
 
             if (isSamePerson(user1, user2)) continue;
 
-            if (!blockedPairs.has(`${user1}:${user2}`)) {
+            if (blockedPairs.has(`${user1}:${user2}`)) continue;
 
-                waitingUsers.splice(j, 1);
-                waitingUsers.splice(i, 1);
+            if (!genderCompatible(user1, user2)) continue;
 
-                userInterests.delete(user1);
-                userInterests.delete(user2);
+            waitingUsers.splice(j, 1);
+            waitingUsers.splice(i, 1);
 
-                return { pair: [user1, user2], sharedTags: [] };
-            }
+            userInterests.delete(user1);
+            userInterests.delete(user2);
+            socketMeta.delete(user1);
+            socketMeta.delete(user2);
+
+            return { pair: [user1, user2], sharedTags: [] };
         }
     }
 
