@@ -15,10 +15,31 @@ const socketMeta = new Map();
 
 const blockedPairs = new Set();
 
+const userBlockedIds = new Map();
+
+
+   function persistentlyBlocked(user1, user2) {
+
+    const owner1 = socketOwners.get(user1);
+    const owner2 = socketOwners.get(user2);
+
+    const blocked1 = userBlockedIds.get(user1) || [];
+    const blocked2 = userBlockedIds.get(user2) || [];
+
+    return (
+        (owner2 && blocked1.includes(owner2)) ||
+        (owner1 && blocked2.includes(owner1))
+    );
+}
 
 export function addToQueue(socketId, interests = [], userId = null, options = {}) {
 
-    const { isPremium = false, gender = null, genderPreference = [] } = options;
+ const {
+    isPremium = false,
+    gender = null,
+    genderPreference = [],
+    blockedUserIds = [],
+} = options;   
 
     const alreadyQueued = waitingUsers.includes(socketId);
 
@@ -48,7 +69,12 @@ export function addToQueue(socketId, interests = [], userId = null, options = {}
             ? genderPreference.map((g) => String(g).toLowerCase())
             : [],
     });
-
+     userBlockedIds.set(
+    socketId,
+    Array.isArray(blockedUserIds)
+        ? blockedUserIds.map(String)
+        : []
+);
     if (userId) {
         socketOwners.set(socketId, userId);
     } else {
@@ -68,7 +94,7 @@ export function removeFromQueue(socketId) {
     if (index !== -1) {
         waitingUsers.splice(index, 1);
     }
-
+    userBlockedIds.delete(socketId);
     userInterests.delete(socketId);
     socketOwners.delete(socketId);
     socketMeta.delete(socketId);
@@ -191,6 +217,8 @@ export function getNextPair() {
 
             if (blockedPairs.has(`${user1}:${user2}`)) continue;
 
+            if (persistentlyBlocked(user1, user2)) continue;
+
             if (!genderCompatible(user1, user2)) continue;
 
             const shared = sharedInterests(user1, user2);
@@ -204,6 +232,8 @@ export function getNextPair() {
                 userInterests.delete(user2);
                 socketMeta.delete(user1);
                 socketMeta.delete(user2);
+                userBlockedIds.delete(user1);
+                userBlockedIds.delete(user2);
 
                 return { pair: [user1, user2], sharedTags: shared };
             }
@@ -223,6 +253,8 @@ export function getNextPair() {
 
             if (blockedPairs.has(`${user1}:${user2}`)) continue;
 
+            if (persistentlyBlocked(user1, user2)) continue;
+
             if (!genderCompatible(user1, user2)) continue;
 
             waitingUsers.splice(j, 1);
@@ -232,6 +264,8 @@ export function getNextPair() {
             userInterests.delete(user2);
             socketMeta.delete(user1);
             socketMeta.delete(user2);
+            userBlockedIds.delete(user1);
+            userBlockedIds.delete(user2);
 
             return { pair: [user1, user2], sharedTags: [] };
         }
