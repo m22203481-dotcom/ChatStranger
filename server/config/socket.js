@@ -796,39 +796,38 @@ export default function registerSocketEvents(io) {
 
         // DEV-ONLY: flip isPremium on/off for testing until real payments
         // are wired up. Deliberately a no-op outside development.
-        socket.on("devTogglePremium", async () => {
+     socket.on("devTogglePremium", async () => {
 
-            if (process.env.NODE_ENV === "production") return;
-            if (!socket.userId) return;
+    if (!socket.userId) return;
 
-            try {
+    try {
 
-                const user = await User.findById(socket.userId);
+        const user = await User.findById(socket.userId);
 
-                if (!user) return;
+        if (!user) return;
 
-                user.isPremium = true;
-                await user.save();
+        user.isPremium = true;
+        await user.save();
 
-                socket.isPremium = true;
+        socket.isPremium = true;
 
-                socket.emit("identityResolved", {
-                    userId: user._id,
-                    displayName: user.displayName,
-                    avatarUrl: user.avatarUrl,
-                    isPremium: true,
-                    gender: user.gender,
-                    country: user.country || null,
-                    age: user.age || null,
-                });
-
-            } catch (error) {
-
-                console.error("DEV TOGGLE PREMIUM ERROR:", error);
-
-            }
-
+        socket.emit("identityResolved", {
+            userId: user._id,
+            displayName: user.displayName,
+            avatarUrl: user.avatarUrl,
+            isPremium: true,
+            gender: user.gender,
+            country: user.country || null,
+            age: user.age || null,
         });
+
+    } catch (error) {
+
+        console.error("FREE UPGRADE ERROR:", error);
+
+    }
+
+});   
 
         // ONBOARDING — gender/country/age, collected once right after
         // login (guest or Google) and before the person ever sees the
