@@ -807,16 +807,16 @@ export default function registerSocketEvents(io) {
 
                 if (!user) return;
 
-                user.isPremium = !user.isPremium;
+                user.isPremium = true;
                 await user.save();
 
-                socket.isPremium = user.isPremium;
+                socket.isPremium = true;
 
                 socket.emit("identityResolved", {
                     userId: user._id,
                     displayName: user.displayName,
                     avatarUrl: user.avatarUrl,
-                    isPremium: user.isPremium,
+                    isPremium: true,
                     gender: user.gender,
                     country: user.country || null,
                     age: user.age || null,
