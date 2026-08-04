@@ -856,6 +856,28 @@ export default function registerSocketEvents(io) {
                     { upsert: true }
                 );
 
+                // If this stranger happened to already be a friend, blocking
+                // ends that too — same rule as blockFriend, just reached via
+                // a different door (the stranger-chat dropdown vs the
+                // friends list).
+                const removedFriendship = await Friendship.findOneAndDelete({
+                    status: "accepted",
+                    $or: [
+                        { requester: socket.userId, recipient: otherSocket.userId },
+                        { requester: otherSocket.userId, recipient: socket.userId },
+                    ],
+                });
+
+                if (removedFriendship) {
+
+                    socket.emit("friendRemoved", { friendUserId: otherSocket.userId });
+
+                    io.to(`user-${otherSocket.userId}`).emit("friendRemoved", {
+                        friendUserId: socket.userId,
+                    });
+
+                }
+
             } catch (error) {
 
                 console.error("BLOCK USER ERROR:", error);
@@ -1128,31 +1150,41 @@ export default function registerSocketEvents(io) {
 
                 });
 
-                const enriched = friendUsers.map((f) => {
+                const enriched = await Promise.all(
+                    friendUsers.map(async (f) => {
 
-                    const friendId = f._id.toString();
-                    const conversation = conversationByFriendId.get(friendId);
+                        const friendId = f._id.toString();
+                        const conversation = conversationByFriendId.get(friendId);
 
-                    const isUnread = Boolean(
-                        conversation &&
-                        !conversation.readBy
-                            .map((id) => id.toString())
-                            .includes(socket.userId)
-                    );
+                        let unreadCount = 0;
 
-                    return {
-                        userId: f._id,
-                        displayName: f.displayName,
-                        avatarUrl: f.avatarUrl,
-                        isOnline: onlineUserCounts.has(friendId),
-                        isPremium: Boolean(f.isPremium),
-                        isUnread,
-                        lastMessageAt: conversation?.lastMessageAt
-                            ? conversation.lastMessageAt.getTime()
-                            : null,
-                    };
+                        if (conversation) {
 
-                });
+                            const lastReadRaw = conversation.lastReadAt?.[socket.userId];
+                            const lastReadAt = lastReadRaw ? new Date(lastReadRaw) : new Date(0);
+
+                            unreadCount = await Message.countDocuments({
+                                conversation: conversation._id,
+                                sender: { $ne: socket.userId },
+                                createdAt: { $gt: lastReadAt },
+                            });
+
+                        }
+
+                        return {
+                            userId: f._id,
+                            displayName: f.displayName,
+                            avatarUrl: f.avatarUrl,
+                            isOnline: onlineUserCounts.has(friendId),
+                            isPremium: Boolean(f.isPremium),
+                            unreadCount,
+                            lastMessageAt: conversation?.lastMessageAt
+                                ? conversation.lastMessageAt.getTime()
+                                : null,
+                        };
+
+                    })
+                );
 
                 // Most recent activity first; friends with no DM history
                 // yet fall to the bottom
@@ -1266,7 +1298,10 @@ export default function registerSocketEvents(io) {
                 // Opening the chat counts as reading it
                 await Conversation.updateOne(
                     { _id: conversation._id },
-                    { $addToSet: { readBy: socket.userId } }
+                    {
+                        $addToSet: { readBy: socket.userId },
+                        $set: { [`lastReadAt.${socket.userId}`]: new Date() },
+                    }
                 );
 
                 const pastMessages = await Message.find({

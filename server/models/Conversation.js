@@ -65,6 +65,15 @@ const conversationSchema = new mongoose.Schema(
                 ref: "User",
             },
         ],
+
+        // When each participant last opened this conversation, keyed by
+        // their user id (as a string). Used to count exactly how many
+        // messages arrived after that point, for a real unread NUMBER
+        // in the friends list rather than just a boolean.
+        lastReadAt: {
+            type: mongoose.Schema.Types.Mixed,
+            default: {},
+        },
     },
     {
         timestamps: true,
