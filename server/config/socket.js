@@ -253,6 +253,8 @@ export default function registerSocketEvents(io) {
                         avatarUrl: dbUser.avatarUrl,
                         isPremium: dbUser.isPremium,
                         gender: dbUser.gender,
+                        country: dbUser.country || null,
+                        age: dbUser.age || null,
                     });
 
                     onlineUserCounts.set(
@@ -816,11 +818,61 @@ export default function registerSocketEvents(io) {
                     avatarUrl: user.avatarUrl,
                     isPremium: user.isPremium,
                     gender: user.gender,
+                    country: user.country || null,
+                    age: user.age || null,
                 });
 
             } catch (error) {
 
                 console.error("DEV TOGGLE PREMIUM ERROR:", error);
+
+            }
+
+        });
+
+        // ONBOARDING — gender/country/age, collected once right after
+        // login (guest or Google) and before the person ever sees the
+        // chat UI. Once these are saved, identityResolved will always
+        // come back with them filled in, so the client only shows the
+        // onboarding screen for genuinely new accounts.
+        socket.on("completeOnboarding", async ({ gender, country, age }) => {
+
+            await socket.identityPromise;
+
+            if (!socket.userId) return;
+
+            const validGenders = ["male", "female", "other"];
+            const numericAge = Number(age);
+
+            if (!validGenders.includes(gender)) return;
+            if (!country || typeof country !== "string") return;
+            if (!Number.isFinite(numericAge) || numericAge < 13 || numericAge > 100) return;
+
+            try {
+
+                const user = await User.findByIdAndUpdate(
+                    socket.userId,
+                    { gender, country, age: numericAge },
+                    { new: true }
+                );
+
+                if (!user) return;
+
+                socket.gender = user.gender;
+
+                socket.emit("identityResolved", {
+                    userId: user._id,
+                    displayName: user.displayName,
+                    avatarUrl: user.avatarUrl,
+                    isPremium: user.isPremium,
+                    gender: user.gender,
+                    country: user.country || null,
+                    age: user.age || null,
+                });
+
+            } catch (error) {
+
+                console.error("COMPLETE ONBOARDING ERROR:", error);
 
             }
 
