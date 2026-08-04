@@ -1052,7 +1052,7 @@ export default function ChatPage() {
         onSendMessage={friends.sendFriendMessage}
         onSendFile={friends.sendFriendFile}
         onCloseChat={friends.closeFriendChat}
-        unreadFriendIds={friends.unreadFriendIds}
+        unreadCounts={friends.unreadCounts}
         isPremium={isPremium}
         onPremiumRequired={() => setShowPremiumModal(true)}
         onRemoveFriend={friends.removeFriend}

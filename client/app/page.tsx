@@ -38,9 +38,9 @@ export default function Home() {
 
 
       {/* Navbar */}
-      <nav className="relative z-20 flex items-center justify-between px-4 sm:px-10 py-4 sm:py-6">
+      <nav className="relative z-20 flex items-center justify-end px-4 sm:px-10 py-4 sm:py-6">
 
-        <h1 className="text-2xl sm:text-3xl font-bold">
+        <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl sm:text-3xl font-bold">
           StrangerConnect
         </h1>
 

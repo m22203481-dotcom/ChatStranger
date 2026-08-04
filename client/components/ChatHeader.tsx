@@ -44,8 +44,91 @@ export default function ChatHeader({
         isDark ? "border-gray-800" : "border-gray-200"
       }`}
     >
-      <h1 className="text-2xl font-bold text-center">StrangerConnect</h1>
+      {/* TOP ROW — mirrors the homepage nav: title on the left, theme
+          toggle + hamburger parallel to it on the right */}
+      <div className="relative flex items-center justify-end">
+        <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold">StrangerConnect</h1>
 
+        <div className="flex items-center gap-3">
+          {/* THEME TOGGLE — same as homepage, separate from the hamburger */}
+          <button
+            onClick={onToggleTheme}
+            aria-label="Toggle theme"
+            title={isDark ? "Switch to light theme" : "Switch to dark theme"}
+            className={`w-9 h-9 flex items-center justify-center rounded-full border transition ${
+              isDark
+                ? "border-gray-700 hover:bg-gray-800"
+                : "border-gray-300 hover:bg-gray-100"
+            }`}
+          >
+            {isDark ? "☀️" : "🌙"}
+          </button>
+
+          {/* HAMBURGER MENU — now just Home + Buy Premium. Wrapped in its
+              own relative container so the dropdown opens right under
+              THIS button, not below the whole two-row header. */}
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen((prev) => !prev)}
+              aria-label="Open menu"
+              aria-expanded={menuOpen}
+              className={`w-9 h-9 flex flex-col items-center justify-center gap-1 rounded-full border transition ${
+                isDark
+                  ? "border-gray-700 hover:bg-gray-800"
+                  : "border-gray-300 hover:bg-gray-100"
+              }`}
+            >
+              <span className={`block w-4 h-0.5 rounded-full transition ${menuOpen ? "translate-y-1.5 rotate-45" : ""} ${isDark ? "bg-white" : "bg-black"}`} />
+              <span className={`block w-4 h-0.5 rounded-full transition ${menuOpen ? "opacity-0" : ""} ${isDark ? "bg-white" : "bg-black"}`} />
+              <span className={`block w-4 h-0.5 rounded-full transition ${menuOpen ? "-translate-y-1.5 -rotate-45" : ""} ${isDark ? "bg-white" : "bg-black"}`} />
+            </button>
+
+            {/* Click-outside backdrop */}
+            {menuOpen && (
+              <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+            )}
+
+            {/* DROPDOWN MENU — Home, Buy Premium. Theme has its own
+                button to the left, and Blocked Users lives in the
+                profile card (opened via the avatar+name button). */}
+            {menuOpen && (
+              <div
+                className={`absolute right-0 top-full mt-2 w-56 rounded-2xl border overflow-hidden z-40 animate-in fade-in slide-in-from-top-2 duration-200 ${
+                  isDark ? "bg-gray-950 border-gray-800" : "bg-white border-gray-200 shadow-xl"
+                }`}
+              >
+                <button
+                  onClick={() => {
+                    onGoHome();
+                    setMenuOpen(false);
+                  }}
+                  className={`w-full text-left flex items-center gap-2 px-5 py-3 font-medium transition ${
+                    isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"
+                  }`}
+                >
+                  🏠 Home
+                </button>
+
+                <button
+                  onClick={() => {
+                    onBuyPremium();
+                    setMenuOpen(false);
+                  }}
+                  className={`w-full text-left flex items-center gap-2 px-5 py-3 font-medium border-t transition ${
+                    isDark ? "border-gray-800 hover:bg-gray-800" : "border-gray-200 hover:bg-gray-100"
+                  }`}
+                >
+                  👑 Buy Premium
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* SECOND ROW — Friends on the left; online count, Report, and the
+          profile avatar grouped a bit further toward the right edge now
+          that the hamburger/theme buttons have moved up to the top row */}
       <div className="flex items-center justify-between">
         <button
           onClick={onFriendsClick}
@@ -61,7 +144,7 @@ export default function ChatHeader({
           )}
         </button>
 
-        <div className="flex items-center gap-4 text-sm sm:text-base">
+        <div className="flex items-center gap-4 text-sm sm:text-base pr-1">
           <div className="text-blue-400 font-medium">
             👥 {onlineUsers} online
           </div>
@@ -81,7 +164,7 @@ export default function ChatHeader({
           {/* AVATAR + NAME — opens the profile card, same as before */}
           <button
             onClick={onProfileClick}
-            className="flex flex-col items-center ml-2"
+            className="flex flex-col items-center"
           >
             <div className="relative">
               <img
@@ -118,75 +201,9 @@ export default function ChatHeader({
               </span>
             )}
           </button>
-
-          {/* HAMBURGER MENU — separate from the avatar, its own dropdown */}
-          <button
-            onClick={() => setMenuOpen((prev) => !prev)}
-            aria-label="Open menu"
-            aria-expanded={menuOpen}
-            className={`w-9 h-9 flex flex-col items-center justify-center gap-1 rounded-full border transition ml-1 ${
-              isDark
-                ? "border-gray-700 hover:bg-gray-800"
-                : "border-gray-300 hover:bg-gray-100"
-            }`}
-          >
-            <span className={`block w-4 h-0.5 rounded-full transition ${menuOpen ? "translate-y-1.5 rotate-45" : ""} ${isDark ? "bg-white" : "bg-black"}`} />
-            <span className={`block w-4 h-0.5 rounded-full transition ${menuOpen ? "opacity-0" : ""} ${isDark ? "bg-white" : "bg-black"}`} />
-            <span className={`block w-4 h-0.5 rounded-full transition ${menuOpen ? "-translate-y-1.5 -rotate-45" : ""} ${isDark ? "bg-white" : "bg-black"}`} />
-          </button>
         </div>
       </div>
 
-      {/* Click-outside backdrop */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-      )}
-
-      {/* DROPDOWN MENU — Theme, Home, Buy Premium. Blocked Users moved
-          to the profile card (opened via the avatar+name button) instead. */}
-      {menuOpen && (
-        <div
-          className={`absolute right-4 top-full mt-2 w-56 rounded-2xl border overflow-hidden z-40 animate-in fade-in slide-in-from-top-2 duration-200 ${
-            isDark ? "bg-gray-950 border-gray-800" : "bg-white border-gray-200 shadow-xl"
-          }`}
-        >
-          <button
-            onClick={() => {
-              onToggleTheme();
-              setMenuOpen(false);
-            }}
-            className={`w-full text-left flex items-center gap-2 px-5 py-3 font-medium transition ${
-              isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"
-            }`}
-          >
-            {isDark ? "☀️" : "🌙"} {isDark ? "Light Theme" : "Dark Theme"}
-          </button>
-
-          <button
-            onClick={() => {
-              onGoHome();
-              setMenuOpen(false);
-            }}
-            className={`w-full text-left flex items-center gap-2 px-5 py-3 font-medium border-t transition ${
-              isDark ? "border-gray-800 hover:bg-gray-800" : "border-gray-200 hover:bg-gray-100"
-            }`}
-          >
-            🏠 Home
-          </button>
-
-          <button
-            onClick={() => {
-              onBuyPremium();
-              setMenuOpen(false);
-            }}
-            className={`w-full text-left flex items-center gap-2 px-5 py-3 font-medium border-t transition ${
-              isDark ? "border-gray-800 hover:bg-gray-800" : "border-gray-200 hover:bg-gray-100"
-            }`}
-          >
-            👑 Buy Premium
-          </button>
-        </div>
-      )}
     </header>
   );
 }

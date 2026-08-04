@@ -23,7 +23,7 @@ type FriendsPanelProps = {
     name: string;
   }) => void;
   onCloseChat: () => void;
-  unreadFriendIds?: Set<string>;
+  unreadCounts?: Record<string, number>;
   isPremium?: boolean;
   onPremiumRequired?: () => void;
   onRemoveFriend?: (friendUserId: string) => void;
@@ -39,7 +39,7 @@ export default function FriendsPanel({
   onSendMessage,
   onSendFile,
   onCloseChat,
-  unreadFriendIds,
+  unreadCounts,
   isPremium,
   onPremiumRequired,
   onRemoveFriend,
@@ -264,7 +264,11 @@ export default function FriendsPanel({
 
               <button
                 onClick={handleSend}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-semibold"
+               className={`text-white px-4 py-2 rounded-full text-sm font-semibold ${
+  isDark
+    ? "bg-blue-600 hover:bg-blue-700"
+    : "bg-blue-500 hover:bg-blue-600 shadow-sm"
+}`} 
               >
                 Send
               </button>
@@ -285,12 +289,15 @@ export default function FriendsPanel({
 
             <div className="flex-1 overflow-y-auto">
               {friends.length === 0 ? (
-                <p className={`text-sm text-center mt-8 px-6 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                <p className={`text-sm text-center mt-8 px-6 ${isDark ? "text-gray-500" : "text-gray-600"}`}>
                   No friends yet. Add someone while chatting to start
                   building your list!
                 </p>
               ) : (
-                friends.map((friend) => (
+                friends.map((friend) => {
+                  const unreadCount = unreadCounts?.[friend.userId] ?? 0;
+
+                  return (
                   <div
                     key={friend.userId}
                     className={`w-full flex items-center gap-2 px-4 py-3 transition ${
@@ -299,9 +306,9 @@ export default function FriendsPanel({
                   >
                     <button
                       onClick={() => onOpenChat(friend)}
-                      className="shrink-0"
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left"
                     >
-                      <div className="relative">
+                      <div className="relative shrink-0">
                         <img
 
                           referrerPolicy="no-referrer"
@@ -321,11 +328,24 @@ export default function FriendsPanel({
                             👑
                           </span>
                         )}
+
+                        {unreadCount > 0 && (
+                          <span
+                            className={`absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold text-white bg-red-500 border-2 ${avatarBadgeBorder}`}
+                          >
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                          </span>
+                        )}
                       </div>
+
+                      <span className="font-medium truncate">
+                        {friend.displayName}
+                      </span>
                     </button>
 
-                    {/* THREE-DOT MENU — Remove Friend / Block User */}
-                    <div className="relative shrink-0">
+                    {/* THREE-DOT MENU — after the name, with breathing
+                        room so it doesn't feel cramped against the text */}
+                    <div className="relative shrink-0 ml-2">
                       <button
                         onClick={() =>
                           setOpenMenuFor((prev) =>
@@ -334,9 +354,9 @@ export default function FriendsPanel({
                         }
                         aria-label="Friend options"
                         aria-expanded={openMenuFor === friend.userId}
-                        className={`w-6 h-6 flex items-center justify-center rounded-full text-lg leading-none ${
-                          isDark ? "hover:bg-gray-800" : "hover:bg-gray-200"
-                        }`}
+                       className={`w-9 h-9 flex items-center justify-center rounded-full text-3xl leading-none font-bold ${
+  isDark ? "hover:bg-gray-800" : "hover:bg-gray-200"
+}`} 
                       >
                         ⋮
                       </button>
@@ -349,7 +369,7 @@ export default function FriendsPanel({
                           />
 
                           <div
-                            className={`absolute left-0 top-full mt-1 w-40 rounded-xl border overflow-hidden z-40 animate-in fade-in slide-in-from-top-2 duration-200 ${
+                            className={`absolute right-0 top-full mt-1 w-40 rounded-xl border overflow-hidden z-40 animate-in fade-in slide-in-from-top-2 duration-200 ${
                               isDark
                                 ? "bg-gray-950 border-gray-800"
                                 : "bg-white border-gray-200 shadow-xl"
@@ -384,20 +404,9 @@ export default function FriendsPanel({
                         </>
                       )}
                     </div>
-
-                    <button
-                      onClick={() => onOpenChat(friend)}
-                      className="flex-1 text-left"
-                    >
-                      <span className="font-medium flex items-center gap-2">
-                        {friend.displayName}
-                        {unreadFriendIds?.has(friend.userId) && (
-                          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                        )}
-                      </span>
-                    </button>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           </>

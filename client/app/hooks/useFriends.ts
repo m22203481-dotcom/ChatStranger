@@ -15,7 +15,7 @@ export type Friend = {
   avatarUrl: string;
   isOnline?: boolean;
   isPremium?: boolean;
-  isUnread?: boolean;
+  unreadCount?: number;
   lastMessageAt?: number | null;
 };
 
@@ -48,9 +48,8 @@ export default function useFriends({
   const [activeFriendChat, setActiveFriendChat] =
     useState<ActiveFriendChat | null>(null);
 
-  const [unreadFriendIds, setUnreadFriendIds] = useState<Set<string>>(
-    new Set()
-  );
+  // userId -> number of unread messages from that friend
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
   // Socket listeners are registered once (empty dep array below), so they
   // close over stale state if we read activeFriendChat directly. This ref
@@ -97,15 +96,24 @@ export default function useFriends({
     socket.on("friendsList", (list: Friend[]) => {
       setFriends(list);
 
-      // Server already tells us who's unread as of the last time we
-      // read anything (persisted), and already sorted by recent activity
-      setUnreadFriendIds(
-        new Set(list.filter((f) => f.isUnread).map((f) => f.userId))
-      );
+      // Server already tells us the real unread count as of the last
+      // time we read anything (persisted), and already sorted by
+      // recent activity
+      const counts: Record<string, number> = {};
+      list.forEach((f) => {
+        if (f.unreadCount) counts[f.userId] = f.unreadCount;
+      });
+      setUnreadCounts(counts);
     });
 
     socket.on("friendRemoved", ({ friendUserId }: { friendUserId: string }) => {
       setFriends((prev) => prev.filter((f) => f.userId !== friendUserId));
+
+      setUnreadCounts((prev) => {
+        if (!(friendUserId in prev)) return prev;
+        const { [friendUserId]: _removed, ...rest } = prev;
+        return rest;
+      });
 
       setActiveFriendChat((prev) =>
         prev?.friend.userId === friendUserId ? null : prev
@@ -157,14 +165,12 @@ export default function useFriends({
 
       setActiveFriendChat((prev) => {
         if (!prev || prev.conversationId !== data.conversationId) {
-          // Not currently viewing this conversation — flag it unread
+          // Not currently viewing this conversation — bump the count
           if (data.senderId) {
-            setUnreadFriendIds((prevSet) => {
-              if (prevSet.has(data.senderId)) return prevSet;
-              const next = new Set(prevSet);
-              next.add(data.senderId);
-              return next;
-            });
+            setUnreadCounts((prevCounts) => ({
+              ...prevCounts,
+              [data.senderId]: (prevCounts[data.senderId] ?? 0) + 1,
+            }));
           }
 
           return prev;
@@ -215,12 +221,10 @@ export default function useFriends({
           activeFriendChatRef.current?.conversationId === conversationId;
 
         if (!isCurrentlyOpen) {
-          setUnreadFriendIds((prevSet) => {
-            if (prevSet.has(senderId)) return prevSet;
-            const next = new Set(prevSet);
-            next.add(senderId);
-            return next;
-          });
+          setUnreadCounts((prevCounts) => ({
+            ...prevCounts,
+            [senderId]: (prevCounts[senderId] ?? 0) + 1,
+          }));
         }
       }
     );
@@ -274,11 +278,10 @@ export default function useFriends({
   }, []);
 
   const openFriendChat = useCallback((friend: Friend) => {
-    setUnreadFriendIds((prev) => {
-      if (!prev.has(friend.userId)) return prev;
-      const next = new Set(prev);
-      next.delete(friend.userId);
-      return next;
+    setUnreadCounts((prev) => {
+      if (!(friend.userId in prev)) return prev;
+      const { [friend.userId]: _cleared, ...rest } = prev;
+      return rest;
     });
 
     setActiveFriendChat({
@@ -358,8 +361,8 @@ export default function useFriends({
     requestNotice,
     friends,
     activeFriendChat,
-    unreadFriendIds,
-    hasUnreadDMs: unreadFriendIds.size > 0,
+    unreadCounts,
+    hasUnreadDMs: Object.values(unreadCounts).some((c: number) => c > 0),
     sendFriendRequest,
     respondToRequest,
     loadFriendsList,
