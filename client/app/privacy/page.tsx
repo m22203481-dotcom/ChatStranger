@@ -83,7 +83,7 @@ export default function PrivacyPage() {
           <p>
             For privacy-related questions, contact:
             <br />
-            support@yourdomain.com
+            m22203481@gmail.com
           </p>
         </section>
       </div>

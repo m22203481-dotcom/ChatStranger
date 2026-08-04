@@ -101,7 +101,7 @@ export default function TermsPage() {
           <p>
             Questions regarding these Terms may be sent to:
             <br />
-            support@yourdomain.com
+            m22203481@gmail.com
           </p>
         </section>
       </div>

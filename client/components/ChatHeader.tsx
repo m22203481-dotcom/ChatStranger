@@ -4,7 +4,6 @@ import { useState } from "react";
 
 type ChatHeaderProps = {
   status: string;
-  onlineUsers: number;
   onReport: () => void;
   profile: {
     name: string;
@@ -25,7 +24,6 @@ type ChatHeaderProps = {
 
 export default function ChatHeader({
   status,
-  onlineUsers,
   onReport,
   profile,
   onProfileClick,
@@ -144,11 +142,7 @@ export default function ChatHeader({
           )}
         </button>
 
-        <div className="flex items-center gap-4 text-sm sm:text-base pr-1">
-          <div className="text-blue-400 font-medium">
-            👥 {onlineUsers} online
-          </div>
-
+        <div className="flex items-center gap-3">
           <button
             onClick={onReport}
             disabled={status !== "Connected"}

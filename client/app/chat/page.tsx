@@ -559,7 +559,6 @@ export default function ChatPage() {
     <main className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
       <ChatHeader
         status={status}
-        onlineUsers={onlineUsers}
         onReport={() => {
           if (status === "Connected") {
             setShowReport(true);
@@ -584,11 +583,10 @@ export default function ChatPage() {
             <div className="text-6xl mb-6">🔍</div>
 
             <h2 className="text-2xl font-bold">
-              Looking for someone to chat with
+              Looking for someone....
             </h2>
 
             <p className="mt-3 text-gray-400 max-w-md">
-              We are finding a stranger for you.
              Stay here and your conversation will start soon.
             </p>
 
@@ -649,9 +647,8 @@ export default function ChatPage() {
                 </div>
               )}
 
-              <p className="text-xs text-gray-500 mt-3">
-                We'll try to match you with someone who shares an
-                interest. Leave this empty for a fully random match.
+              <p className="text-xs text-gray-400 mt-3">
+                Leave this empty for random match.
               </p>
             </div>
 
