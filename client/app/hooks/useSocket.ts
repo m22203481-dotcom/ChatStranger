@@ -6,6 +6,13 @@ export type SocketIdentity =
   | { provider: "google"; email: string; name: string }
   | { provider: "anonymous"; token: string };
 
+export type ResolvedIdentity = {
+  gender: string | null;
+  country: string | null;
+  age: number | null;
+  isPremium: boolean;
+};
+
 type UseSocketProps = {
   identity: SocketIdentity | null;
     profile: {
@@ -31,6 +38,12 @@ type UseSocketProps = {
   setIsPremium?: React.Dispatch<React.SetStateAction<boolean>>;
   onMediaBlocked?: () => void;
   onUndoUnavailable?: (reason: string) => void;
+  // Onboarding gate — fires once per connection with whatever the server
+  // knows about this account. The caller (ChatPage) decides what to do
+  // with it: if gender/country/age are already set, call startSearch()
+  // right away; if not, show the onboarding screen and call startSearch()
+  // once the person finishes it. Search never starts on its own anymore.
+  onIdentityResolved?: (data: ResolvedIdentity) => void;
 };
 
 export default function useSocket({
@@ -48,9 +61,9 @@ export default function useSocket({
   setIsPremium,
   onMediaBlocked,
   onUndoUnavailable,
-}: UseSocketProps): void {
+  onIdentityResolved,
+}: UseSocketProps): { startSearch: () => void } {
   console.log("PROFILE RECEIVED:", profile);
-  // console.log("PROFILE RECEIVED:", profile);
   // Keep a ref so the socket handlers always see the latest interests
   // without needing to re-run the connection effect
   const interestsRef = useRef(interests);
@@ -87,38 +100,54 @@ export default function useSocket({
       console.log("EVENT:", event, args);
     });
 
-   socket.once("connect", () => {
-  console.log("✅ Connected:", socket.id);
-  console.log("PROFILE IN CONNECT:", profile);
+    socket.once("connect", () => {
+      console.log("✅ Connected:", socket.id);
+      console.log("PROFILE IN CONNECT:", profile);
 
-  socket.emit("setProfile", {
-    name: profile?.name ?? "Anonymous",
-    avatarUrl: profile?.image ?? "/default-avatar.png",
-  });
+      socket.emit("setProfile", {
+        name: profile?.name ?? "Anonymous",
+        avatarUrl: profile?.image ?? "/default-avatar.png",
+      });
 
-  // Wait for the server to resolve our account before searching, so a
-  // returning user can be matched back to their previous chat instead
-  // of starting fresh. Falls back after a short timeout just in case
-  // identity resolution is slow or unavailable.
-  let searchStarted = false;
+      // Report the resolved identity to the caller instead of starting
+      // the search ourselves — the onboarding gate decides when it's
+      // actually time to search. Falls back after a short timeout in
+      // case identity resolution is slow/unavailable, so the onboarding
+      // gate isn't stuck waiting forever (treated as "unknown", which
+      // safely shows onboarding rather than skipping it).
+      let identityHandled = false;
 
-  const startSearch = () => {
-    if (searchStarted) return;
-    searchStarted = true;
+      const handleIdentity = (data: any) => {
+        if (identityHandled) return;
+        identityHandled = true;
 
-    socket.emit("findStranger", {
-      interests: interestsRef.current,
-      genderPreference: genderPreferenceRef.current,
+        onIdentityResolved?.({
+          gender: data?.gender ?? null,
+          country: data?.country ?? null,
+          age: data?.age ?? null,
+          isPremium: Boolean(data?.isPremium),
+        });
+      };
+
+      socket.once("identityResolved", handleIdentity);
+
+      setTimeout(() => {
+        if (!identityHandled) {
+          identityHandled = true;
+          onIdentityResolved?.({
+            gender: null,
+            country: null,
+            age: null,
+            isPremium: false,
+          });
+        }
+      }, 4000);
     });
-  };
 
-  socket.once("identityResolved", startSearch);
-  setTimeout(startSearch, 3000);
-}); 
-
-    // Separate from the once-listener above (which only kicks off the
-    // first search) — this one stays registered for the whole session so
-    // isPremium stays in sync if it changes later (e.g. the dev toggle)
+    // Separate from the once-listener above (which only reports the
+    // first resolution) — this one stays registered for the whole
+    // session so isPremium stays in sync if it changes later (e.g. the
+    // dev toggle, or completing onboarding re-emits identityResolved)
     socket.on("identityResolved", (data: any) => {
       setIsPremium?.(Boolean(data?.isPremium));
     });
@@ -286,4 +315,13 @@ export default function useSocket({
       socket.disconnect();
     };
   }, [identityKey]);
+
+  const startSearch = () => {
+    socket.emit("findStranger", {
+      interests: interestsRef.current,
+      genderPreference: genderPreferenceRef.current,
+    });
+  };
+
+  return { startSearch };
 }

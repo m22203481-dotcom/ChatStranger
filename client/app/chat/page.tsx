@@ -16,6 +16,30 @@ import useFriends from "@/app/hooks/useFriends";
 import { useAnonymousAuth } from "@/contexts/AnonymousAuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
+// Used by the onboarding screen's country select
+const COUNTRIES = [
+  "Afghanistan", "Albania", "Algeria", "Argentina", "Armenia", "Australia",
+  "Austria", "Azerbaijan", "Bahrain", "Bangladesh", "Belarus", "Belgium",
+  "Bolivia", "Bosnia and Herzegovina", "Brazil", "Bulgaria", "Cambodia",
+  "Cameroon", "Canada", "Chile", "China", "Colombia", "Costa Rica",
+  "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark", "Ecuador",
+  "Egypt", "El Salvador", "Estonia", "Ethiopia", "Finland", "France",
+  "Georgia", "Germany", "Ghana", "Greece", "Guatemala", "Honduras",
+  "Hong Kong", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq",
+  "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan",
+  "Kenya", "Kuwait", "Latvia", "Lebanon", "Libya", "Lithuania",
+  "Luxembourg", "Malaysia", "Mexico", "Moldova", "Monaco", "Mongolia",
+  "Morocco", "Myanmar", "Nepal", "Netherlands", "New Zealand", "Nicaragua",
+  "Nigeria", "North Macedonia", "Norway", "Oman", "Pakistan", "Panama",
+  "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar",
+  "Romania", "Russia", "Saudi Arabia", "Serbia", "Singapore", "Slovakia",
+  "Slovenia", "South Africa", "South Korea", "Spain", "Sri Lanka",
+  "Sweden", "Switzerland", "Taiwan", "Tanzania", "Thailand", "Tunisia",
+  "Turkey", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom",
+  "United States", "Uruguay", "Uzbekistan", "Venezuela", "Vietnam",
+  "Yemen", "Zambia", "Zimbabwe", "Other",
+];
+
 export default function ChatPage() {
   const { data: session, status: authStatus } = useSession();
   const { anonUser, isAnonLoading, logoutGuest } = useAnonymousAuth();
@@ -43,6 +67,16 @@ export default function ChatPage() {
     isPremium?: boolean;
   } | null>(null);
   const [strangerUserId, setStrangerUserId] = useState<string | null>(null);
+
+  // Onboarding gate — shown once, right after login (guest or Google),
+  // before any matching happens. null = not determined yet (still
+  // waiting on identityResolved), true = still needs to fill it in,
+  // false = already done (skip straight to searching).
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+  const [onboardingGender, setOnboardingGender] = useState<string | null>(null);
+  const [onboardingCountry, setOnboardingCountry] = useState("");
+  const [onboardingAge, setOnboardingAge] = useState("");
+  const [onboardingError, setOnboardingError] = useState<string | null>(null);
 
   // Premium features
   const [isPremium, setIsPremium] = useState(false);
@@ -114,7 +148,7 @@ export default function ChatPage() {
     ? { provider: "anonymous", token: anonUser.token }
     : null;
 
-  useSocket({
+  const { startSearch } = useSocket({
     identity,
     profile,
     setStatus: (newStatus) => {
@@ -149,6 +183,15 @@ export default function ChatPage() {
       };
       setPremiumNotice(messages[reason] ?? "Couldn't undo that skip.");
       setTimeout(() => setPremiumNotice(null), 3000);
+    },
+    onIdentityResolved: (data) => {
+      if (data.gender && data.country && data.age) {
+        // Already onboarded (returning user) — go straight to searching
+        setNeedsOnboarding(false);
+        startSearch();
+      } else {
+        setNeedsOnboarding(true);
+      }
     },
   });
 
@@ -368,6 +411,36 @@ export default function ChatPage() {
     setShowFriendsPanel(true);
   };
 
+  const handleCompleteOnboarding = () => {
+    setOnboardingError(null);
+
+    const age = Number(onboardingAge);
+
+    if (!onboardingGender) {
+      setOnboardingError("Please select a gender.");
+      return;
+    }
+
+    if (!onboardingCountry) {
+      setOnboardingError("Please select a country.");
+      return;
+    }
+
+    if (!Number.isFinite(age) || age < 13 || age > 100) {
+      setOnboardingError("Please enter a valid age (13-100).");
+      return;
+    }
+
+    socket.emit("completeOnboarding", {
+      gender: onboardingGender,
+      country: onboardingCountry,
+      age,
+    });
+
+    setNeedsOnboarding(false);
+    startSearch();
+  };
+
   if (isAuthLoading) {
     return (
       <main className={`h-screen flex items-center justify-center ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
@@ -378,6 +451,108 @@ export default function ChatPage() {
 
   if (!isAuthenticated) {
     return null;
+  }
+
+  // ONBOARDING GATE — shown once right after login (guest or Google),
+  // before the person ever sees the search/chat UI. needsOnboarding is
+  // null until identityResolved reports back; true means gender/country/
+  // age aren't saved yet.
+  if (needsOnboarding === null) {
+    return (
+      <main className={`h-screen flex items-center justify-center ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
+        Loading...
+      </main>
+    );
+  }
+
+  if (needsOnboarding) {
+    return (
+      <main
+        className={`relative min-h-screen overflow-hidden flex items-center justify-center px-6 transition-colors duration-300 ${
+          isDark
+            ? "bg-gradient-to-b from-black via-gray-900 to-black text-white"
+            : "bg-gradient-to-b from-white via-gray-100 to-white text-black"
+        }`}
+      >
+        <div
+          className={`relative z-10 w-full max-w-md rounded-3xl p-8 text-center border shadow-2xl ${
+            isDark ? "bg-gray-900/80 border-gray-800" : "bg-white/90 border-gray-200"
+          }`}
+        >
+          <h1 className="text-3xl font-extrabold">Tell us about yourself</h1>
+
+          <p className={`mt-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+            This helps us match you better. Takes 10 seconds.
+          </p>
+
+          {/* GENDER */}
+          <p className="text-sm font-semibold mt-6 mb-2 text-left">Gender</p>
+          <div className="flex gap-2">
+            {["male", "female", "other"].map((g) => (
+              <button
+                key={g}
+                onClick={() => setOnboardingGender(g)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold capitalize border transition ${
+                  onboardingGender === g
+                    ? "bg-blue-600 border-blue-500 text-white"
+                    : isDark
+                    ? "bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500"
+                    : "bg-gray-100 border-gray-300 text-gray-700 hover:border-gray-400"
+                }`}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+
+          {/* COUNTRY */}
+          <p className="text-sm font-semibold mt-6 mb-2 text-left">Country</p>
+          <select
+            value={onboardingCountry}
+            onChange={(e) => setOnboardingCountry(e.target.value)}
+            className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none ${
+              isDark
+                ? "bg-gray-800 border-gray-700 text-white"
+                : "bg-gray-100 border-gray-300 text-black"
+            }`}
+          >
+            <option value="">Select your country</option>
+            {COUNTRIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+
+          {/* AGE */}
+          <p className="text-sm font-semibold mt-6 mb-2 text-left">Age</p>
+          <input
+            type="number"
+            min={13}
+            max={100}
+            value={onboardingAge}
+            onChange={(e) => setOnboardingAge(e.target.value)}
+            placeholder="Your age"
+            className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none ${
+              isDark
+                ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500"
+                : "bg-gray-100 border-gray-300 text-black placeholder-gray-400"
+            }`}
+          />
+
+          {onboardingError && (
+            <p className="text-red-400 text-sm mt-3">{onboardingError}</p>
+          )}
+
+          <button
+            onClick={handleCompleteOnboarding}
+            className="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition"
+          >
+            Get Started →
+          </button>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -786,16 +961,7 @@ export default function ChatPage() {
               {profile.isGuest ? "End Guest Session" : "Logout"}
             </button>
 
-            <button
-              onClick={handleDevTogglePremium}
-             className={`w-full py-2 rounded-xl mt-2 text-xs ${
-  isDark
-    ? "bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-400"
-    : "bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600"
-}`} 
-            >
-              {profile.isPremium ? "Remove Premium (dev)" : "Grant Premium (dev)"}
-            </button>
+            
           </div>
         </div>
       )}
@@ -950,40 +1116,58 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* UNLOCK PREMIUM MODAL */}
-      {showPremiumModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
-          <div className="bg-gray-900 rounded-2xl p-6 w-80 text-center border border-yellow-700/40">
-            <div className="text-4xl mb-2">👑</div>
+     {/* UNLOCK PREMIUM MODAL */}
+{showPremiumModal && (
+  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
+    <div
+      className={`rounded-2xl p-6 w-80 text-center border ${
+        isDark
+          ? "bg-gray-900 border-yellow-700/40 text-white"
+          : "bg-white border-yellow-300 text-black shadow-xl"
+      }`}
+    >
+      <div className="text-4xl mb-2">👑</div>
 
-            <h2 className="font-bold text-xl">Unlock Premium</h2>
+      <h2 className="font-bold text-xl">
+        Free Premium Acccess
+      </h2>
+<p className="text-sm mt-2 text-gray-500">
+  Premium features are currently free during early access.
+</p>
+      <ul
+        className={`text-sm mt-4 space-y-2 text-left ${
+          isDark ? "text-gray-300" : "text-gray-600"
+        }`}
+      >
+        <li>✓ Gender preferences</li>
+        <li>✓ Priority matching</li>
+        <li>✓ Unlimited media uploads</li>
+        <li>✓ Future premium features</li>
+      </ul>
 
-            <ul className="text-sm text-gray-300 mt-4 space-y-2 text-left">
-              <li>✓ Gender preferences</li>
-              <li>✓ Priority matching</li>
-              <li>✓ Unlimited media uploads</li>
-              <li>✓ Future premium features</li>
-            </ul>
+      <button
+        onClick={() => {
+          handleDevTogglePremium();
+          setShowPremiumModal(false);
+        }}
+        className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-semibold rounded-full py-3 mt-6"
+      >
+        Free Upgrade
+      </button>
 
-            <button
-              onClick={() => {
-                handleDevTogglePremium();
-                setShowPremiumModal(false);
-              }}
-              className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-semibold rounded-full py-3 mt-6"
-            >
-              Upgrade
-            </button>
-
-            <button
-              onClick={() => setShowPremiumModal(false)}
-              className="w-full text-gray-400 hover:text-white text-sm mt-3"
-            >
-              Maybe later
-            </button>
-          </div>
-        </div>
-      )}
+      <button
+        onClick={() => setShowPremiumModal(false)}
+        className={`w-full text-sm mt-3 ${
+          isDark
+            ? "text-gray-400 hover:text-white"
+            : "text-gray-600 hover:text-black"
+        }`}
+      >
+        Maybe later
+      </button>
+    </div>
+  </div>
+)} 
 
       {/* BLOCKED USERS MODAL */}
       {showBlockedUsersModal && (
