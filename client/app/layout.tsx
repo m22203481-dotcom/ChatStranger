@@ -17,15 +17,18 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.chatstranger.chat"),
+  applicationName: "ChatStranger",
 
-  title: "ChatStranger - Anonymous Chat With Strangers Online",
+  title: "ChatStranger - Anonymous Chat With Strangers Online instantly",
 
   description:
-    "ChatStranger is a free anonymous chat platform where you can meet new people, make friends online, and connect instantly through interest-based matching.",
+    "ChatStranger is a free anonymous chat platform to talk with strangers online, meet new people, and start real-time conversations instantly.",
 
   keywords: [
     "anonymous chat",
     "chat with strangers",
+    "talk to strangers online",
+    "meet new people",
     "online chat",
     "make friends online",
     "random chat",
@@ -33,11 +36,18 @@ export const metadata: Metadata = {
     "anonymous messaging",
     "ChatStranger",
   ],
+alternates: {
+    canonical: "https://www.chatstranger.chat",
+  },
 
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
-    title: "ChatStranger - Anonymous Chat With Strangers Online",
+    title: "ChatStranger - Anonymous Chat With Strangers Online instantly",
     description:
-      "Meet new people instantly through anonymous conversations and interest-based matching.",
+      "Meet new people instantly through anonymous conversations .",
     url: "https://www.chatstranger.chat",
     siteName: "ChatStranger",
     type: "website",
@@ -45,7 +55,7 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: "ChatStranger - Anonymous Chat With Strangers Online",
+    title: "ChatStranger - talk to Strangers Online Instantly",
     description:
       "Meet new people instantly through anonymous conversations and interest-based matching.",
   },

@@ -6,6 +6,18 @@ import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import Image from "next/image";
 export default function Home() {
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ChatStranger",
+  "url": "https://www.chatstranger.chat",
+  "applicationCategory": "SocialNetworkingApplication",
+  "operatingSystem": "Web",
+  "description":
+    "ChatStranger is a free anonymous chat platform to talk with strangers online and start real-time conversations instantly.",
+};
+
   const [menuOpen, setMenuOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
 
@@ -69,7 +81,9 @@ export default function Home() {
     },
   ];
 
+
   return (
+    
     <main
       className={`relative min-h-screen overflow-hidden transition-colors duration-300 ${
         isDark
@@ -77,6 +91,13 @@ export default function Home() {
           : "bg-gradient-to-b from-slate-50 via-blue-50 to-purple-50  text-black"
       }`}
     >
+<script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{
+    __html: JSON.stringify(jsonLd),
+  }}
+/>
+
       {/* SCROLL PROGRESS BAR */}
       <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-transparent">
         <div
