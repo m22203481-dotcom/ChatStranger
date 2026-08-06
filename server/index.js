@@ -13,7 +13,7 @@ const io = new Server(server, {
   cors: {
     origin: [
       "http://localhost:3000",
-      "https://connectstranger.vercel.app"
+      "https://chatstranger.chat"
     ],
     methods: ["GET", "POST"],
   },
