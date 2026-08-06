@@ -100,7 +100,21 @@ export default function AnonymousChatPage() {
         </div>
 
       </section>
+      <div>
+  <h2 className="text-3xl font-bold">
+    Discover More Chat Options
+  </h2>
 
+  <div className="mt-6 flex flex-col gap-3 text-blue-400">
+    <Link href="/chat-with-strangers" className="hover:underline">
+      Chat With Strangers Online →
+    </Link>
+
+    <Link href="/random-chat" className="hover:underline">
+      Try Random Chat →
+    </Link>
+  </div>
+</div>
     </main>
   );
 }

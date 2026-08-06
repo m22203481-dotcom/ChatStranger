@@ -87,7 +87,21 @@ export default function ChatWithStrangersPage() {
             instantly.
           </p>
         </div>
+       <div>
+  <h2 className="text-3xl font-bold">
+    Explore More Ways To Chat
+  </h2>
 
+  <div className="mt-6 flex flex-col gap-3 text-blue-400">
+    <Link href="/anonymous-chat" className="hover:underline">
+      Try Anonymous Chat Online →
+    </Link>
+
+    <Link href="/random-chat" className="hover:underline">
+      Start Random Chat →
+    </Link>
+  </div>
+</div>
       </section>
 
     </main>
