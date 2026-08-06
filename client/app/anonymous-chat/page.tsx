@@ -5,11 +5,45 @@ export const metadata = {
   description:
     "Try anonymous chat online for free with ChatStranger. Talk with strangers, meet new people, and start private conversations instantly without creating a profile.",
 };
-
+const faqs = [
+  {
+    q: "What is anonymous chat?",
+    a: "Anonymous chat allows people to communicate online without creating public profiles or sharing personal information.",
+  },
+  {
+    q: "Is anonymous chat free on ChatStranger?",
+    a: "Yes. ChatStranger provides free anonymous conversations with people around the world.",
+  },
+  {
+    q: "Can I talk with strangers anonymously?",
+    a: "Yes. ChatStranger allows you to start conversations while choosing what information you want to share.",
+  },
+  {
+    q: "Is anonymous chatting safe?",
+    a: "ChatStranger provides reporting tools and privacy-focused features to create a safer chatting experience.",
+  },
+];
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqs.map((faq) => ({
+    "@type": "Question",
+    "name": faq.q,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": faq.a,
+    },
+  })),
+};
 export default function AnonymousChatPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black text-white px-6 py-16">
-
+<script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{
+    __html: JSON.stringify(faqJsonLd),
+  }}
+/>
       <div className="max-w-4xl mx-auto text-center">
 
         <h1 className="text-5xl md:text-6xl font-extrabold">
@@ -113,6 +147,24 @@ export default function AnonymousChatPage() {
     <Link href="/random-chat" className="hover:underline">
       Try Random Chat →
     </Link>
+  </div>
+</div>
+<div>
+  <h2 className="text-3xl font-bold">
+    Frequently Asked Questions
+  </h2>
+
+  <div className="mt-6 space-y-6">
+    {faqs.map((faq) => (
+      <div key={faq.q}>
+        <h3 className="text-xl font-semibold">
+          {faq.q}
+        </h3>
+        <p className="mt-2 text-gray-300">
+          {faq.a}
+        </p>
+      </div>
+    ))}
   </div>
 </div>
     </main>

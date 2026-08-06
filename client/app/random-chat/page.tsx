@@ -5,11 +5,45 @@ export const metadata = {
   description:
     "Try random chat online with ChatStranger. Meet new people, talk with strangers, and start instant anonymous conversations from anywhere in the world.",
 };
-
+const faqs = [
+  {
+    q: "What is random chat?",
+    a: "Random chat connects you with new people for spontaneous online conversations.",
+  },
+  {
+    q: "Can I use random chat for free?",
+    a: "Yes. ChatStranger allows users to start random conversations online for free.",
+  },
+  {
+    q: "How does random chat work?",
+    a: "ChatStranger matches you with another person who is ready to chat in real time.",
+  },
+  {
+    q: "Can I find people with similar interests?",
+    a: "Yes. ChatStranger supports interest-based matching to help create better conversations.",
+  },
+];
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqs.map((faq) => ({
+    "@type": "Question",
+    "name": faq.q,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": faq.a,
+    },
+  })),
+};
 export default function RandomChatPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black text-white px-6 py-16">
-
+      <script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{
+    __html: JSON.stringify(faqJsonLd),
+  }}
+/>
       <div className="max-w-4xl mx-auto text-center">
 
         <h1 className="text-5xl md:text-6xl font-extrabold">
@@ -113,6 +147,24 @@ export default function RandomChatPage() {
     <Link href="/anonymous-chat" className="hover:underline">
       Anonymous Chat →
     </Link>
+  </div>
+</div>
+<div>
+  <h2 className="text-3xl font-bold">
+    Frequently Asked Questions
+  </h2>
+
+  <div className="mt-6 space-y-6">
+    {faqs.map((faq) => (
+      <div key={faq.q}>
+        <h3 className="text-xl font-semibold">
+          {faq.q}
+        </h3>
+        <p className="mt-2 text-gray-300">
+          {faq.a}
+        </p>
+      </div>
+    ))}
   </div>
 </div>
     </main>
