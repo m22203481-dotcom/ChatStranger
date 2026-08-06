@@ -208,13 +208,14 @@ export default function Home() {
         No registration. No personal information. Just conversations.
       </p>
 
-      <a
-        href="/login"
-        className="mt-10 inline-block rounded-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 hover:bg-blue-700 hover:scale-110 transition duration-300 px-10 py-5 text-2xl font-semibold shadow-lg text-white"
-      >
-        Start Chatting →
-      </a>
-
+     <div className="mt-10 inline-block">
+  <a
+    href="/login"
+    className="inline-block rounded-full bg-blue-600 hover:bg-blue-700 hover:scale-105 transition duration-300 px-10 py-5 text-2xl font-semibold text-white shadow-[0_0_40px_rgba(59,130,246,0.6)]"
+  >
+    Start Chatting →
+  </a>
+</div> 
       <p
         className={`mt-4 text-sm ${
           isDark ? "text-gray-500" : "text-gray-500"
@@ -225,7 +226,6 @@ export default function Home() {
 
     </div>
 
-    {/* RIGHT SIDE */}
    {/* RIGHT SIDE */}
 <div className="relative mt-16 lg:mt-0 lg:w-1/2">
 
@@ -249,15 +249,9 @@ export default function Home() {
 </div>
 
   </div>
-
-
-
-
-
   
 </section>
       
-
       {/* About Section */}
       <Reveal className="relative z-10 mt-16 lg:mt-24 px-6 text-center">
         <section id="about">
