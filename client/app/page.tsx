@@ -248,7 +248,7 @@ const faqJsonLd = {
           isDark ? "text-gray-400" : "text-gray-800"
         }`}
       >
-        Chat anonymously with strangers from around the world.
+        Chat anonymously with strangers online from around the world.
         No registration. No personal information. Just conversations.
       </p>
 
@@ -315,8 +315,7 @@ const faqJsonLd = {
               isDark ? "text-gray-400" : "text-gray-800"
             }`}
           >
-            ChatStranger is a free anonymous chat platform where people can meet
-            new strangers instantly through anonymous conversations.
+            ChatStranger is a free anonymous chat platform where people can chat with strangers online, meet new people, and start real-time anonymous conversations instantly.
             No profiles. No pressure. Just real conversations.
           </p>
         </section>
