@@ -244,7 +244,7 @@ export default function Home() {
   </div>
 
   <img
-    src="/homepage-chat-preview.png"
+    src="/homepage-chat-preview.webp"
     alt="StrangerConnect chat preview"
     className="w-full max-w-3xl mx-auto [animation:float_6s_ease-in-out_infinite]"
   />
@@ -289,7 +289,7 @@ export default function Home() {
             } lg:flex lg:items-center lg:gap-10`}
           >
             <img
-              src="/mask.png"
+              src="/mask.webp"
               alt="Anonymous"
               className="w-full max-w-xs sm:max-w-sm mx-auto h-auto -mb-1 lg:mb-0 lg:w-1/2 lg:order-2"
             />
