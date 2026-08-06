@@ -200,7 +200,9 @@ export default function ChatPage() {
   );
 
   const addInterest = () => {
-    const tag = interestInput.trim().toLowerCase();
+   const tag =
+  interestInput.trim().charAt(0).toUpperCase() +
+  interestInput.trim().slice(1); 
 
     if (!tag) return;
     if (interests.includes(tag)) {
