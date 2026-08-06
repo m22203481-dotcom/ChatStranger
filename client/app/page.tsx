@@ -203,7 +203,7 @@ export default function Home() {
 
       <p
         className={`mt-8 text-lg sm:text-xl max-w-2xl lg:max-w-xl ${
-          isDark ? "text-gray-400" : "text-gray-600"
+          isDark ? "text-gray-400" : "text-gray-800"
         }`}
       >
         Chat anonymously with strangers from around the world.
@@ -257,13 +257,17 @@ export default function Home() {
       {/* About Section */}
       <Reveal className="relative z-10 mt-16 lg:mt-24 px-6 text-center">
         <section id="about">
-          <h2 className="text-4xl lg:text-5xl font-bold">
-            What is StrangerConnect?
-          </h2>
+        <h2
+  className={`text-4xl lg:text-5xl font-extrabold ${
+    isDark ? "text-white" : "text-gray-900"
+  }`}
+>
+  What is StrangerConnect?
+</h2> 
 
           <p
             className={`mt-6 text-lg max-w-3xl mx-auto ${
-              isDark ? "text-gray-400" : "text-gray-600"
+              isDark ? "text-gray-400" : "text-gray-800"
             }`}
           >
             StrangerConnect is a free anonymous chat platform where people can meet
@@ -295,7 +299,7 @@ export default function Home() {
                 Truly Anonymous Chats
               </h3>
 
-              <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+              <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-800"}`}>
                 No profiles. No distractions.
                 <br />
                 Just meaningful connections with anonymous people with whom you can share whatever you like.
@@ -319,7 +323,7 @@ export default function Home() {
                 No Swipes. Just Vibes.
               </h3>
 
-              <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+              <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-800"}`}>
                 Forget profiles and algorithms.
                 <br />
                 Jump straight into the conversation with strangers who matches your vibes and start building meaningful connections.
@@ -336,7 +340,7 @@ export default function Home() {
               className="w-full max-w-2xl mx-auto h-auto mb-2 lg:mb-0 lg:w-1/2 lg:order-2"
             />
 
-            <p className={`mt-3 text-lg lg:w-1/2 lg:order-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+            <p className={`mt-3 text-lg lg:w-1/2 lg:order-1 ${isDark ? "text-gray-400" : "text-gray-800"}`}>
               No random small talk.
               <br />
               Match with people on your wavelength and dive deep into the topics you both love.
@@ -358,7 +362,7 @@ export default function Home() {
               className="w-full max-w-md mx-auto h-auto mb-4 lg:mb-0 lg:w-1/2 lg:order-1"
             />
 
-            <p className={`mt-3 text-center lg:text-left lg:w-1/2 lg:order-1 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+            <p className={`mt-3 text-center lg:text-left lg:w-1/2 lg:order-1 ${isDark ? "text-gray-400" : "text-gray-800"}`}>
               Enjoy premium features completely free during our early access period.
               Choose gender preferences, get priority matching, share unlimited media,
               and unlock future premium upgrades at no cost.
@@ -374,11 +378,17 @@ export default function Home() {
       </section>
 
       {/* FAQ Section */}
+
+
       <section className="max-w-4xl mx-auto px-6 pt-12 pb-20">
         <Reveal>
-          <h2 className="text-4xl font-bold text-center mb-12">
-            Frequently Asked Questions
-          </h2>
+        <h2
+  className={`text-4xl font-extrabold text-center mb-12 ${
+    isDark ? "text-white" : "text-gray-900"
+  }`}
+>
+  Frequently Asked Questions
+</h2>  
         </Reveal>
 
         <div className="space-y-6">
@@ -392,7 +402,7 @@ export default function Home() {
                 }`}
               >
                 <h3 className="text-xl font-semibold">{faq.q}</h3>
-                <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+                <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-800"}`}>
                   {faq.a}
                 </p>
               </div>
@@ -407,7 +417,8 @@ export default function Home() {
           isDark ? "border-gray-800 text-gray-500" : "border-gray-200 text-gray-500"
         }`}
       >
-        <h3 className={`text-xl font-bold ${isDark ? "text-white" : "text-black"}`}>
+        <h3 className={`text-xl font-bold ${
+          isDark ? "text-white" : "text-gray-900"}`}>
           StrangerConnect
         </h3>
 
