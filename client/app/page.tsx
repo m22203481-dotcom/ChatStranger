@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
-
+import Image from "next/image";
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
@@ -243,11 +243,14 @@ export default function Home() {
     🚀
   </div>
 
-  <img
-    src="/homepage-chat-preview.webp"
-    alt="StrangerConnect chat preview"
-    className="w-full max-w-3xl mx-auto [animation:float_6s_ease-in-out_infinite]"
-  />
+ <Image
+  src="/homepage-chat-preview.webp"
+  alt="StrangerConnect chat preview"
+  width={1600}
+  height={900}
+  priority
+  className="w-full max-w-3xl mx-auto [animation:float_6s_ease-in-out_infinite]"
+/>
 </div>
 
   </div>
@@ -288,11 +291,14 @@ export default function Home() {
               isDark ? "bg-gray-900" : "bg-gray-100 border border-gray-200"
             } lg:flex lg:items-center lg:gap-10`}
           >
-            <img
-              src="/mask.webp"
-              alt="Anonymous"
-              className="w-full max-w-xs sm:max-w-sm mx-auto h-auto -mb-1 lg:mb-0 lg:w-1/2 lg:order-2"
-            />
+           <Image
+  src="/mask.webp"
+  alt="Anonymous"
+  width={1000}
+  height={1000}
+  loading="lazy"
+  className="w-full max-w-xs sm:max-w-sm mx-auto h-auto -mb-1 lg:mb-0 lg:w-1/2 lg:order-2"
+/>
 
             <div className="lg:w-1/2 lg:order-1">
               <h3 className="text-2xl font-extrabold tracking-wide">
@@ -334,11 +340,14 @@ export default function Home() {
 
         <Reveal delay={100}>
           <div className="text-center lg:text-left lg:flex lg:items-center lg:gap-10">
-            <img
-              src="/interests.webp"
-              alt="Interest Matching"
-              className="w-full max-w-2xl mx-auto h-auto mb-2 lg:mb-0 lg:w-1/2 lg:order-2"
-            />
+           <Image
+  src="/interests.webp"
+  alt="Interest Matching"
+  width={1200}
+  height={800}
+  loading="lazy"
+  className="w-full max-w-2xl mx-auto h-auto mb-2 lg:mb-0 lg:w-1/2 lg:order-2"
+/> 
 
             <p className={`mt-3 text-lg lg:w-1/2 lg:order-1 ${isDark ? "text-gray-400" : "text-gray-800"}`}>
               No random small talk.
@@ -356,11 +365,14 @@ export default function Home() {
               isDark ? "bg-gray-900" : "bg-gray-100 border border-gray-200"
             } lg:flex lg:items-center lg:gap-10`}
           >
-            <img
-              src="/premium.webp"
-              alt="Free Premium Access"
-              className="w-full max-w-md mx-auto h-auto mb-4 lg:mb-0 lg:w-1/2 lg:order-1"
-            />
+           <Image
+  src="/premium.webp"
+  alt="Free Premium Access"
+  width={1200}
+  height={800}
+  loading="lazy"
+  className="w-full max-w-md mx-auto h-auto mb-4 lg:mb-0 lg:w-1/2 lg:order-2"
+/> 
 
             <p className={`mt-3 text-center lg:text-left lg:w-1/2 lg:order-1 ${isDark ? "text-gray-400" : "text-gray-800"}`}>
               Enjoy premium features completely free during our early access period.

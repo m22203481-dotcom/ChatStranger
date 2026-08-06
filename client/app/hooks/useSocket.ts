@@ -63,7 +63,7 @@ export default function useSocket({
   onUndoUnavailable,
   onIdentityResolved,
 }: UseSocketProps): { startSearch: () => void } {
-  console.log("PROFILE RECEIVED:", profile);
+
   // Keep a ref so the socket handlers always see the latest interests
   // without needing to re-run the connection effect
   const interestsRef = useRef(interests);
