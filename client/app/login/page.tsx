@@ -75,7 +75,7 @@ export default function LoginPage() {
             : "bg-white/80 border-gray-200"
         }`}
       >
-        <h1 className="text-4xl font-extrabold">StrangerConnect</h1>
+        <h1 className="text-4xl font-extrabold">ChatStranger</h1>
 
         <p className={`mt-4 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
           Connect with strangers around the world.

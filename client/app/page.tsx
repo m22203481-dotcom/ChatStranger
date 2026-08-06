@@ -44,8 +44,8 @@ export default function Home() {
 
   const faqs = [
     {
-      q: "Is StrangerConnect completely free?",
-      a: "Yes. StrangerConnect is free to use. During early access, premium features are also available at no cost.",
+      q: "Is ChatStranger completely free?",
+      a: "Yes. ChatStranger is free to use. During early access, premium features are also available at no cost.",
     },
     {
       q: "Do I need to create an account?",
@@ -53,18 +53,18 @@ export default function Home() {
     },
     {
       q: "How does interest-based matching work?",
-      a: "Add your interests before searching for a chat. StrangerConnect will try to connect you with people who share similar interests, making conversations more meaningful.",
+      a: "Add your interests before searching for a chat. ChatStranger will try to connect you with people who share similar interests, making conversations more meaningful.",
     },
     {
-      q: "Is StrangerConnect anonymous?",
+      q: "Is ChatStranger anonymous?",
       a: "Yes. We do not require you to reveal your identity. You choose what information to share during conversations.",
     },
     {
-      q: "Can I make friends on StrangerConnect?",
-      a: "Absolutely. Many users join StrangerConnect to meet new people, discover shared interests, and build genuine friendships through conversation.",
+      q: "Can I make friends on ChatStranger?",
+      a: "Absolutely. Many users join ChatStranger to meet new people, discover shared interests, and build genuine friendships through conversation.",
     },
     {
-      q: "Is StrangerConnect safe?",
+      q: "Is ChatStranger safe?",
       a: "We provide reporting tools, moderation systems, and privacy-focused features to help keep the platform safe and enjoyable for everyone.",
     },
   ];
@@ -104,7 +104,7 @@ export default function Home() {
       {/* Navbar */}
       <nav className="relative z-20 flex items-center justify-end px-4 sm:px-10 py-4 sm:py-6">
         <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl sm:text-3xl lg:text-4xl font-bold">
-          StrangerConnect
+          ChatStranger
         </h1>
 
         <div className="flex items-center gap-3">
@@ -245,7 +245,7 @@ export default function Home() {
 
  <Image
   src="/homepage-chat-preview.webp"
-  alt="StrangerConnect chat preview"
+  alt="ChatStranger chat preview"
   width={1600}
   height={900}
   priority
@@ -265,7 +265,7 @@ export default function Home() {
     isDark ? "text-white" : "text-gray-900"
   }`}
 >
-  What is StrangerConnect?
+  What is ChatStranger?
 </h2> 
 
           <p
@@ -273,7 +273,7 @@ export default function Home() {
               isDark ? "text-gray-400" : "text-gray-800"
             }`}
           >
-            StrangerConnect is a free anonymous chat platform where people can meet
+            ChatStranger is a free anonymous chat platform where people can meet
             new strangers instantly through anonymous conversations.
             No profiles. No pressure. Just real conversations.
           </p>
@@ -380,7 +380,7 @@ export default function Home() {
               and unlock future premium upgrades at no cost.
               <br />
               <br />
-              StrangerConnect is a free anonymous chat platform designed to help you
+              ChatStranger is a free anonymous chat platform designed to help you
               meet new people, make friends online, and connect with strangers who
               share your interests. No subscriptions, no hidden fees, and no paywalls—
               just real conversations with real people from around the world.
@@ -431,7 +431,7 @@ export default function Home() {
       >
         <h3 className={`text-xl font-bold ${
           isDark ? "text-white" : "text-gray-900"}`}>
-          StrangerConnect
+          ChatStranger
         </h3>
 
         <p className="mt-3">Connect. Chat. Discover.</p>
@@ -451,7 +451,7 @@ export default function Home() {
           and connecting through shared interests.
         </p>
 
-        <p className="mt-6 text-sm">© 2026 StrangerConnect. All rights reserved.</p>
+        <p className="mt-6 text-sm">© 2026 ChatStranger. All rights reserved.</p>
       </footer>
 
       {/* Local keyframes for the hero image's float animation — scoped

@@ -13,7 +13,7 @@ export default function PrivacyPage() {
             Introduction
           </h2>
           <p>
-            StrangerConnect ("we", "our", or "us") respects your privacy.
+            ChatStranger ("we", "our", or "us") respects your privacy.
             This Privacy Policy explains what information we collect,
             how we use it, and how we protect it when you use our platform.
           </p>

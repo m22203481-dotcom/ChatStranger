@@ -13,7 +13,7 @@ export default function TermsPage() {
             Acceptance of Terms
           </h2>
           <p>
-            By accessing or using StrangerConnect, you agree to these
+            By accessing or using ChatStranger, you agree to these
             Terms of Service.
           </p>
         </section>
@@ -69,7 +69,7 @@ export default function TermsPage() {
             Service Availability
           </h2>
           <p>
-            StrangerConnect is provided on an "as is" and "as available"
+            ChatStranger is provided on an "as is" and "as available"
             basis. We do not guarantee uninterrupted service.
           </p>
         </section>
@@ -79,7 +79,7 @@ export default function TermsPage() {
             Limitation of Liability
           </h2>
           <p>
-            StrangerConnect is not responsible for user-generated content,
+            ChatStranger is not responsible for user-generated content,
             user interactions, or damages arising from use of the service.
           </p>
         </section>
