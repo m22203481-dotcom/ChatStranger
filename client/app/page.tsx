@@ -335,7 +335,7 @@ const faqJsonLd = {
           >
            <Image
   src="/mask.webp"
-  alt="Anonymous"
+  alt="Anonymous chat with strangers on ChatStranger"
   width={1000}
   height={1000}
   loading="lazy"
@@ -344,7 +344,7 @@ const faqJsonLd = {
 
             <div className="lg:w-1/2 lg:order-1">
               <h3 className="text-2xl font-extrabold tracking-wide">
-                Truly Anonymous Chats
+                Truly Anonymous Chats with Strangers
               </h3>
 
               <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-800"}`}>
@@ -384,7 +384,7 @@ const faqJsonLd = {
           <div className="text-center lg:text-left lg:flex lg:items-center lg:gap-10">
            <Image
   src="/interests.webp"
-  alt="Interest Matching"
+  alt="ChatStranger interest based matching"
   width={1200}
   height={800}
   loading="lazy"
@@ -409,7 +409,7 @@ const faqJsonLd = {
           >
            <Image
   src="/premium.webp"
-  alt="Free Premium Access"
+  alt="ChatStranger premium features are free"
   width={1200}
   height={800}
   loading="lazy"
