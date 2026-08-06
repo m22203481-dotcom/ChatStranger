@@ -194,7 +194,9 @@ export default function Home() {
       <h2 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold leading-tight">
         Meet New People
         <br />
-       <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+       <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 bg-clip-text text-blue-600"
+        style={{ WebkitBackgroundClip: "text" }}
+        >
         Instantly
         </span>
       </h2>
