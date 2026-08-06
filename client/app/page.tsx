@@ -81,6 +81,19 @@ const jsonLd = {
     },
   ];
 
+  
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqs.map((faq) => ({
+    "@type": "Question",
+    "name": faq.q,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": faq.a,
+    },
+  })),
+};
 
   return (
     
@@ -97,6 +110,14 @@ const jsonLd = {
     __html: JSON.stringify(jsonLd),
   }}
 />
+<script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{
+    __html: JSON.stringify(faqJsonLd),
+  }}
+/>
+
+
 
       {/* SCROLL PROGRESS BAR */}
       <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-transparent">
@@ -124,9 +145,9 @@ const jsonLd = {
 
       {/* Navbar */}
       <nav className="relative z-20 flex items-center justify-end px-4 sm:px-10 py-4 sm:py-6">
-        <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl sm:text-3xl lg:text-4xl font-bold">
+        <div className="absolute left-1/2 -translate-x-1/2 text-2xl sm:text-3xl lg:text-4xl font-bold">
           ChatStranger
-        </h1>
+        </div>
 
         <div className="flex items-center gap-3">
           {/* THEME TOGGLE — left of the hamburger */}
@@ -212,15 +233,15 @@ const jsonLd = {
     {/* LEFT SIDE */}
     <div className="lg:w-1/2 text-center lg:text-left">
 
-      <h2 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold leading-tight">
-        Meet New People
+      <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold leading-tight">
+        Chat With Strangers
         <br />
        <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 bg-clip-text text-blue-600"
         style={{ WebkitBackgroundClip: "text" }}
         >
         Instantly
         </span>
-      </h2>
+      </h1>
 
       <p
         className={`mt-8 text-lg sm:text-xl max-w-2xl lg:max-w-xl ${
