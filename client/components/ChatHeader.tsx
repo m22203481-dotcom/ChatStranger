@@ -45,7 +45,7 @@ export default function ChatHeader({
       {/* TOP ROW — mirrors the homepage nav: title on the left, theme
           toggle + hamburger parallel to it on the right */}
       <div className="relative flex items-center justify-end">
-        <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold">StrangerConnect</h1>
+        <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold">ChatStranger</h1>
 
         <div className="flex items-center gap-3">
           {/* THEME TOGGLE — same as homepage, separate from the hamburger */}
