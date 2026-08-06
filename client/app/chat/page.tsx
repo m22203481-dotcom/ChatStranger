@@ -534,6 +534,11 @@ export default function ChatPage() {
             max={100}
             value={onboardingAge}
             onChange={(e) => setOnboardingAge(e.target.value)}
+            onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      handleCompleteOnboarding();
+    }
+  }}
             placeholder="Your age"
             className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none ${
               isDark
