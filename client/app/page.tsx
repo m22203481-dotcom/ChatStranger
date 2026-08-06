@@ -335,7 +335,7 @@ export default function Home() {
         <Reveal delay={100}>
           <div className="text-center lg:text-left lg:flex lg:items-center lg:gap-10">
             <img
-              src="/interests.png"
+              src="/interests.webp"
               alt="Interest Matching"
               className="w-full max-w-2xl mx-auto h-auto mb-2 lg:mb-0 lg:w-1/2 lg:order-2"
             />
@@ -357,7 +357,7 @@ export default function Home() {
             } lg:flex lg:items-center lg:gap-10`}
           >
             <img
-              src="/premium.png"
+              src="/premium.webp"
               alt="Free Premium Access"
               className="w-full max-w-md mx-auto h-auto mb-4 lg:mb-0 lg:w-1/2 lg:order-1"
             />
