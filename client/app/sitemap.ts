@@ -28,7 +28,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
   changeFrequency: "weekly",
   priority: 0.9,
 },
-    {
+{
+  url: `${baseUrl}/meet-new-people`,
+  lastModified: new Date(),
+  changeFrequency: "weekly",
+  priority: 0.9,
+},  
+ {
+  url: `${baseUrl}/make-friends-online`,
+  lastModified: new Date(),
+  changeFrequency: "weekly",
+  priority: 0.9,
+},
+{
       url: `${baseUrl}/login`,
       lastModified: new Date(),
       changeFrequency: "weekly",
