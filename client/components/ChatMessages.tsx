@@ -65,7 +65,7 @@ function MediaContent({ msg }: { msg: Message }) {
       return (
         <button
           onClick={() => setRevealed(true)}
-          className="w-56 h-40 flex flex-col items-center justify-center gap-2 bg-gray-900 rounded-lg text-sm font-semibold"
+          className="w-full max-w-56 h-40 flex flex-col items-center justify-center gap-2 bg-gray-900 rounded-lg text-sm font-semibold"
         >
           <span className="text-2xl">▶️</span>
           Tap to view video
@@ -107,7 +107,7 @@ export default function ChatMessages({
   }, [messages]);
 
   return (
-    <section className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 min-h-0">
+    <section className="flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] px-3 sm:px-6 py-4 space-y-4 min-h-0">
 
       {messages.map((msg, index) => (
         <div

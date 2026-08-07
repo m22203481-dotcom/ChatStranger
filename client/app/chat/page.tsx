@@ -445,7 +445,7 @@ export default function ChatPage() {
 
   if (isAuthLoading) {
     return (
-      <main className={`h-screen flex items-center justify-center ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
+      <main className={`h-dvh flex items-center justify-center ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
         Loading...
       </main>
     );
@@ -461,7 +461,7 @@ export default function ChatPage() {
   // age aren't saved yet.
   if (needsOnboarding === null) {
     return (
-      <main className={`h-screen flex items-center justify-center ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
+      <main className={`h-dvh flex items-center justify-center ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
         Loading...
       </main>
     );
@@ -470,14 +470,14 @@ export default function ChatPage() {
   if (needsOnboarding) {
     return (
       <main
-        className={`relative min-h-screen overflow-hidden flex items-center justify-center px-6 transition-colors duration-300 ${
+        className={`relative min-h-dvh overflow-hidden flex items-center justify-center px-4 sm:px-6 transition-colors duration-300 ${
           isDark
             ? "bg-gradient-to-b from-black via-gray-900 to-black text-white"
             : "bg-gradient-to-b from-white via-gray-100 to-white text-black"
         }`}
       >
         <div
-          className={`relative z-10 w-full max-w-md rounded-3xl p-8 text-center border shadow-2xl ${
+          className={`relative z-10 w-full max-w-md rounded-3xl p-6 sm:p-8 text-center border shadow-2xl ${
             isDark ? "bg-gray-900/80 border-gray-800" : "bg-white/90 border-gray-200"
           }`}
         >
@@ -512,7 +512,7 @@ export default function ChatPage() {
           <select
             value={onboardingCountry}
             onChange={(e) => setOnboardingCountry(e.target.value)}
-            className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none ${
+            className={`w-full rounded-xl border px-4 py-2.5 text-base outline-none ${
               isDark
                 ? "bg-gray-800 border-gray-700 text-white"
                 : "bg-gray-100 border-gray-300 text-black"
@@ -540,7 +540,7 @@ export default function ChatPage() {
     }
   }}
             placeholder="Your age"
-            className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none ${
+            className={`w-full rounded-xl border px-4 py-2.5 text-base outline-none ${
               isDark
                 ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500"
                 : "bg-gray-100 border-gray-300 text-black placeholder-gray-400"
@@ -563,7 +563,7 @@ export default function ChatPage() {
   }
 
   return (
-    <main className={`h-screen flex flex-col overflow-hidden transition-colors duration-300 ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
+    <main className={`h-dvh flex flex-col overflow-hidden transition-colors duration-300 ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
       <ChatHeader
         status={status}
         onReport={() => {
@@ -897,9 +897,9 @@ export default function ChatPage() {
       </div>
 
       {showProfileMenu && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
          <div
-  className={`rounded-2xl p-6 w-80 relative flex flex-col min-h-[420px] ${
+  className={`rounded-2xl p-6 w-full max-w-xs relative flex flex-col min-h-[420px] ${
     isDark
       ? "bg-gray-900 border border-gray-800 text-white"
       : "bg-white border border-gray-200 text-black shadow-xl"
@@ -971,9 +971,9 @@ export default function ChatPage() {
       )}
 
       {showReport && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
         <div
-  className={`rounded-2xl p-6 w-80 ${
+  className={`rounded-2xl p-6 w-full max-w-xs ${
     isDark
       ? "bg-gray-900 text-white"
       : "bg-white text-black shadow-xl"
@@ -1034,8 +1034,8 @@ export default function ChatPage() {
       )}
 
      {showMatchFound && strangerProfile && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-    <div className="bg-gray-900 border border-gray-700 rounded-3xl p-8 flex flex-col items-center animate-pulse">
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div className="bg-gray-900 border border-gray-700 rounded-3xl p-6 sm:p-8 w-full max-w-xs flex flex-col items-center animate-pulse">
       <div className="text-4xl mb-4">✨</div>
 
       <h2 className="text-2xl font-bold text-white mb-4">
@@ -1065,8 +1065,8 @@ export default function ChatPage() {
 
       {/* INCOMING FRIEND REQUEST */}
       {friends.incomingRequest && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className={`rounded-2xl p-6 w-80 text-center border ${isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200 shadow-xl"}`}>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className={`rounded-2xl p-6 w-full max-w-xs text-center border ${isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200 shadow-xl"}`}>
             <img
 
               referrerPolicy="no-referrer"
@@ -1104,7 +1104,7 @@ export default function ChatPage() {
 
       {/* FRIEND REQUEST TOAST */}
       {friends.requestNotice && (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 border px-4 py-2 rounded-full text-sm z-50 shadow-lg ${
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-xs text-center border px-4 py-2 rounded-full text-sm z-50 shadow-lg ${
           isDark ? "bg-gray-800 border-gray-700 text-white" : "bg-white border-gray-200 text-black"
         }`}>
           {friends.requestNotice}
@@ -1113,7 +1113,7 @@ export default function ChatPage() {
 
       {/* PREMIUM FEATURE NOTICE TOAST */}
       {premiumNotice && (
-        <div className={`fixed top-16 left-1/2 -translate-x-1/2 border px-4 py-2 rounded-full text-sm z-50 shadow-lg ${
+        <div className={`fixed top-16 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-xs text-center border px-4 py-2 rounded-full text-sm z-50 shadow-lg ${
           isDark ? "bg-gray-800 border-yellow-700 text-yellow-200" : "bg-white border-yellow-400 text-yellow-700"
         }`}>
           👑 {premiumNotice}
@@ -1122,9 +1122,9 @@ export default function ChatPage() {
 
      {/* UNLOCK PREMIUM MODAL */}
 {showPremiumModal && (
-  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
+  <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4">
     <div
-      className={`rounded-2xl p-6 w-80 text-center border ${
+      className={`rounded-2xl p-6 w-full max-w-xs text-center border ${
         isDark
           ? "bg-gray-900 border-yellow-700/40 text-white"
           : "bg-white border-yellow-300 text-black shadow-xl"
@@ -1175,8 +1175,8 @@ export default function ChatPage() {
 
       {/* BLOCKED USERS MODAL */}
       {showBlockedUsersModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
-          <div className={`rounded-2xl p-6 w-80 max-h-[70vh] flex flex-col text-center border ${isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"}`}>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4">
+          <div className={`rounded-2xl p-6 w-full max-w-xs max-h-[70vh] flex flex-col text-center border ${isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"}`}>
             <div className="text-4xl mb-2">🚫</div>
 
             <h2 className="font-bold text-xl">Blocked Users</h2>
@@ -1248,12 +1248,12 @@ export default function ChatPage() {
         isDark={isDark}
       />
 
-      <footer className="border-t border-gray-800 p-3 sm:p-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-        {/* NEXT BUTTON */}
+      <footer className="border-t border-gray-800 p-3 sm:p-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-4">
+        <div className="flex items-center gap-1.5 sm:gap-3">
+        {/* NEXT BUTTON — h-11 keeps it at/above the ~44px touch-target minimum */}
 <button
   onClick={handleNext}
-  className={`h-9 shrink-0 px-3 rounded-full text-sm font-semibold whitespace-nowrap ${
+  className={`h-11 shrink-0 px-3 rounded-full text-sm font-semibold whitespace-nowrap ${
     isDark
       ? "bg-red-600 hover:bg-red-700 text-white"
       : "bg-red-500 hover:bg-red-600 text-white shadow-sm"
@@ -1266,7 +1266,7 @@ export default function ChatPage() {
           <button
             onClick={() => (isPremium ? handleUndoSkip() : setShowPremiumModal(true))}
             title={isPremium ? "Go back to the last stranger" : "Undo — premium feature"}
-            className={`h-9 w-9 shrink-0 flex items-center justify-center rounded-full text-sm border ${
+            className={`h-11 w-11 shrink-0 flex items-center justify-center rounded-full text-sm border ${
   isDark
     ? "bg-gray-800 hover:bg-gray-700 border-gray-700"
     : "bg-white hover:bg-gray-100 border-gray-300 shadow-sm"
@@ -1309,7 +1309,7 @@ export default function ChatPage() {
                   ? "Type a message..."
                   : "Waiting for stranger..."
               }
-              className={`w-full rounded-full pl-4 pr-11 py-3 outline-none border transition ${
+              className={`w-full rounded-full pl-4 pr-11 py-3 text-base outline-none border transition ${
                 isDark
                   ? "bg-gray-900 text-white placeholder-gray-500 border-gray-800"
                   : "bg-gray-100 text-black placeholder-gray-400 border-gray-300"
@@ -1326,7 +1326,7 @@ export default function ChatPage() {
               }}
               disabled={status !== "Connected" || isUploading}
               title={!isPremium ? "Sending photos/videos is a premium feature" : undefined}
-              className={`absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full text-sm ${
+              className={`absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full text-sm ${
                 status === "Connected" && !isUploading
                   ? "hover:bg-gray-700 text-gray-300"
                   : "text-gray-600 cursor-not-allowed"
@@ -1340,7 +1340,7 @@ export default function ChatPage() {
           <button
             onClick={sendMessage}
             disabled={status !== "Connected"}
-            className={`h-9 shrink-0 px-4 rounded-full text-sm font-semibold whitespace-nowrap ${
+            className={`h-11 shrink-0 px-4 rounded-full text-sm font-semibold whitespace-nowrap ${
             status === "Connected"
   ? isDark
     ? "bg-blue-600 hover:bg-blue-700"

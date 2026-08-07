@@ -114,10 +114,13 @@ export default function FriendsPanel({
       >
         {activeFriendChat ? (
           <>
-            <div className={`flex items-center gap-3 p-4 border-b ${isDark ? "border-gray-800" : "border-gray-200"}`}>
+            <div className={`flex items-center gap-2 p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] border-b ${isDark ? "border-gray-800" : "border-gray-200"}`}>
               <button
                 onClick={onCloseChat}
-                className={isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"}
+                aria-label="Back to friends list"
+                className={`w-9 h-9 shrink-0 -ml-1 flex items-center justify-center rounded-full text-lg transition ${
+                  isDark ? "text-gray-400 hover:text-white hover:bg-gray-800" : "text-gray-500 hover:text-black hover:bg-gray-100"
+                }`}
               >
                 ←
               </button>
@@ -146,13 +149,16 @@ export default function FriendsPanel({
                 )}
               </div>
 
-              <span className="font-semibold">
+              <span className="font-semibold truncate">
                 {activeFriendChat.friend.displayName}
               </span>
 
               <button
                 onClick={onClose}
-                className={`ml-auto text-xl ${isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"}`}
+                aria-label="Close friends panel"
+                className={`ml-auto w-9 h-9 shrink-0 -mr-1 flex items-center justify-center rounded-full text-xl transition ${
+                  isDark ? "text-gray-400 hover:text-white hover:bg-gray-800" : "text-gray-500 hover:text-black hover:bg-gray-100"
+                }`}
               >
                 ✕
               </button>
@@ -216,7 +222,7 @@ export default function FriendsPanel({
               <div ref={bottomRef} />
             </div>
 
-            <div className={`p-3 border-t flex gap-2 ${isDark ? "border-gray-800" : "border-gray-200"}`}>
+            <div className={`p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t flex items-center gap-2 ${isDark ? "border-gray-800" : "border-gray-200"}`}>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -233,7 +239,7 @@ export default function FriendsPanel({
                     if (e.key === "Enter") handleSend();
                   }}
                   placeholder="Message..."
-                  className={`w-full rounded-full border pl-4 pr-11 py-2 text-sm outline-none transition ${
+                  className={`w-full rounded-full border pl-4 pr-11 py-2.5 text-base outline-none transition ${
                     isDark
                       ? "bg-gray-900 border-gray-800 text-white placeholder-gray-500"
                       : "bg-gray-100 border-gray-300 text-black placeholder-gray-400"
@@ -250,7 +256,7 @@ export default function FriendsPanel({
                   }}
                   disabled={isUploading}
                   title={!isPremium ? "Sending photos/videos is a premium feature" : undefined}
-                  className={`absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full text-sm ${
+                  className={`absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full text-sm ${
                     isUploading
                       ? "text-gray-500 cursor-not-allowed"
                       : isDark
@@ -264,7 +270,7 @@ export default function FriendsPanel({
 
               <button
                 onClick={handleSend}
-               className={`text-white px-4 py-2 rounded-full text-sm font-semibold ${
+               className={`h-11 shrink-0 text-white px-4 rounded-full text-sm font-semibold ${
   isDark
     ? "bg-blue-600 hover:bg-blue-700"
     : "bg-blue-500 hover:bg-blue-600 shadow-sm"
@@ -276,12 +282,15 @@ export default function FriendsPanel({
           </>
         ) : (
           <>
-            <div className={`flex items-center p-4 border-b ${isDark ? "border-gray-800" : "border-gray-200"}`}>
+            <div className={`flex items-center p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] border-b ${isDark ? "border-gray-800" : "border-gray-200"}`}>
               <h2 className="font-bold text-lg">Friends</h2>
 
               <button
                 onClick={onClose}
-                className={`ml-auto text-xl ${isDark ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"}`}
+                aria-label="Close friends panel"
+                className={`ml-auto w-9 h-9 shrink-0 -mr-1 flex items-center justify-center rounded-full text-xl transition ${
+                  isDark ? "text-gray-400 hover:text-white hover:bg-gray-800" : "text-gray-500 hover:text-black hover:bg-gray-100"
+                }`}
               >
                 ✕
               </button>

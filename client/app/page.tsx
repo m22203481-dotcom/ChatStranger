@@ -145,9 +145,14 @@ const faqJsonLd = {
 
       {/* Navbar */}
       <nav className="relative z-20 flex items-center justify-end px-4 sm:px-10 py-4 sm:py-6">
-        <div className="absolute left-1/2 -translate-x-1/2 text-2xl sm:text-3xl lg:text-4xl font-bold">
-          ChatStranger
-        </div>
+       <Image
+  src="/logo.png"
+  alt="ChatStranger"
+  width={240}
+  height={60}
+  priority
+  className="absolute left-1/2 -translate-x-1/2 h-auto w-[180px] sm:w-[220px]"
+/> 
 
         <div className="flex items-center gap-3">
           {/* THEME TOGGLE — left of the hamburger */}

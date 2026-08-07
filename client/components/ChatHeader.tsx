@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+import Image from "next/image";
 type ChatHeaderProps = {
   status: string;
   onReport: () => void;
@@ -38,22 +38,29 @@ export default function ChatHeader({
 
   return (
     <header
-      className={`relative border-b px-4 py-4 flex flex-col gap-3 min-h-[90px] transition-colors ${
+      className={`relative border-b px-3 sm:px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:py-4 flex flex-col gap-3 min-h-[90px] transition-colors ${
         isDark ? "border-gray-800" : "border-gray-200"
       }`}
     >
       {/* TOP ROW — mirrors the homepage nav: title on the left, theme
           toggle + hamburger parallel to it on the right */}
       <div className="relative flex items-center justify-end">
-        <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl font-bold">ChatStranger</h1>
+       <Image
+  src="/logo.png"
+  alt="ChatStranger"
+  width={240}
+  height={60}
+  priority
+  className="absolute left-1/2 -translate-x-1/2 h-auto w-[160px] sm:w-[220px]"
+/> 
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* THEME TOGGLE — same as homepage, separate from the hamburger */}
           <button
             onClick={onToggleTheme}
             aria-label="Toggle theme"
             title={isDark ? "Switch to light theme" : "Switch to dark theme"}
-            className={`w-9 h-9 flex items-center justify-center rounded-full border transition ${
+            className={`w-10 h-10 shrink-0 flex items-center justify-center rounded-full border transition ${
               isDark
                 ? "border-gray-700 hover:bg-gray-800"
                 : "border-gray-300 hover:bg-gray-100"
@@ -70,7 +77,7 @@ export default function ChatHeader({
               onClick={() => setMenuOpen((prev) => !prev)}
               aria-label="Open menu"
               aria-expanded={menuOpen}
-              className={`w-9 h-9 flex flex-col items-center justify-center gap-1 rounded-full border transition ${
+              className={`w-10 h-10 shrink-0 flex flex-col items-center justify-center gap-1 rounded-full border transition ${
                 isDark
                   ? "border-gray-700 hover:bg-gray-800"
                   : "border-gray-300 hover:bg-gray-100"
@@ -127,10 +134,10 @@ export default function ChatHeader({
       {/* SECOND ROW — Friends on the left; online count, Report, and the
           profile avatar grouped a bit further toward the right edge now
           that the hamburger/theme buttons have moved up to the top row */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <button
           onClick={onFriendsClick}
-          className={`relative px-3 py-1 rounded-full text-sm font-semibold transition ${
+          className={`relative px-3 py-2 rounded-full text-sm font-semibold transition shrink-0 ${
             isDark
               ? "bg-gray-800 hover:bg-gray-700"
               : "bg-gray-100 hover:bg-gray-200"
@@ -142,11 +149,11 @@ export default function ChatHeader({
           )}
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={onReport}
             disabled={status !== "Connected"}
-            className={`px-3 py-1 rounded-full text-sm font-semibold transition ${
+            className={`px-3 py-2 rounded-full text-sm font-semibold transition shrink-0 ${
               status === "Connected"
                 ? "bg-yellow-600 hover:bg-yellow-700"
                 : `${isDark ? "bg-gray-700" : "bg-gray-200"} opacity-50 cursor-not-allowed`
@@ -181,7 +188,7 @@ export default function ChatHeader({
               )}
             </div>
 
-            <span className={`text-xs max-w-[100px] truncate ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+            <span className={`text-xs max-w-[70px] sm:max-w-[100px] truncate ${isDark ? "text-gray-300" : "text-gray-600"}`}>
               {profile.name}
             </span>
 
