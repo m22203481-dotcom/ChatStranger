@@ -4,7 +4,7 @@ import "./globals.css";
 import AuthProvider from "@/components/SessionProvider";
 import { AnonymousAuthProvider } from "@/contexts/AnonymousAuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-
+import Script from "next/script";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -87,9 +87,24 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <AuthProvider>
-            <AnonymousAuthProvider>{children}</AnonymousAuthProvider>
+            <AnonymousAuthProvider>
+              {children}
+              </AnonymousAuthProvider>
           </AuthProvider>
         </ThemeProvider>
+       <Script
+    src="https://www.googletagmanager.com/gtag/js?id=G-6SC7XQMG81"
+    strategy="afterInteractive"
+  />
+
+  <Script id="google-analytics" strategy="afterInteractive">
+    {`
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-6SC7XQMG81');
+    `}
+  </Script>
       </body>
     </html>
   );
