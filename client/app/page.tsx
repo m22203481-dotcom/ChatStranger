@@ -389,6 +389,10 @@ const faqJsonLd = {
   loading="lazy"
   className="w-full max-w-2xl mx-auto h-auto mb-2 lg:mb-0 lg:w-1/2 lg:order-2"
 /> 
+<div className="lg:w-1/2 lg:order-1">
+  <h3 className="text-2xl font-extrabold">
+    ChatStranger has Interest-Based Matching
+  </h3>
 
             <p className={`mt-3 text-lg lg:w-1/2 lg:order-1 ${isDark ? "text-gray-400" : "text-gray-800"}`}>
               No random small talk.
@@ -397,6 +401,7 @@ const faqJsonLd = {
               <br />
               It is as simple as it looks to connect with the people of similar interests.
             </p>
+          </div>
           </div>
         </Reveal>
 
@@ -414,7 +419,10 @@ const faqJsonLd = {
   loading="lazy"
   className="w-full max-w-md mx-auto h-auto mb-4 lg:mb-0 lg:w-1/2 lg:order-2"
 /> 
-
+<div className="lg:w-1/2 lg:order-1">
+  <h3 className="text-2xl font-extrabold">
+   Free Interest-Based Matching
+  </h3>
             <p className={`mt-3 text-center lg:text-left lg:w-1/2 lg:order-1 ${isDark ? "text-gray-400" : "text-gray-800"}`}>
               Enjoy premium features completely free during our early access period.
               Choose gender preferences, get priority matching, share unlimited media,
@@ -426,6 +434,7 @@ const faqJsonLd = {
               share your interests. No subscriptions, no hidden fees, and no paywalls—
               just real conversations with real people from around the world.
             </p>
+          </div>
           </div>
         </Reveal>
       </section>
@@ -463,7 +472,33 @@ const faqJsonLd = {
           ))}
         </div>
       </section>
+<section className="max-w-4xl mx-auto px-6 py-12">
+  <h2 className="text-3xl font-bold text-center mb-8">
+    Popular Topics
+  </h2>
 
+  <div className="flex flex-wrap justify-center gap-4">
+    <Link href="/chat-with-strangers" className="hover:underline">
+      • Chat With Strangers
+    </Link>
+
+    <Link href="/anonymous-chat" className="hover:underline">
+      • Anonymous Chat
+    </Link>
+
+    <Link href="/random-chat" className="hover:underline">
+      • Random Chat
+    </Link>
+
+    <Link href="/meet-new-people" className="hover:underline">
+      • Meet New People
+    </Link>
+
+    <Link href="/make-friends-online" className="hover:underline">
+      • Make Friends Online
+    </Link>
+  </div>
+</section>
       {/* Footer */}
       <footer
         className={`relative z-10 border-t mt-20 py-10 text-center ${
