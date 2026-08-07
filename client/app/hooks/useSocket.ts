@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { socket } from "@/services/socket";
 import { playMessageSound, playConnectSound } from "@/lib/sounds";
 
@@ -69,6 +69,8 @@ export default function useSocket({
   const interestsRef = useRef(interests);
   const genderPreferenceRef = useRef(genderPreference);
   const pendingReadIdsRef = useRef<Set<string>>(new Set());
+ const [firstMessageTracked, setFirstMessageTracked] = useState(false);
+
 
   useEffect(() => {
     interestsRef.current = interests;
@@ -168,8 +170,14 @@ export default function useSocket({
       setStatus("Searching...");
     });
 
-   socket.on("matched", (data) => {
+   socket.on("matched", (data) => { 
   console.log("🔥 MATCHED EVENT FULL:", data);
+
+    setFirstMessageTracked(false);
+
+if (typeof window !== "undefined" && (window as any).gtag) {
+    (window as any).gtag("event", "matched_with_stranger");
+  }
 
   playConnectSound();
 

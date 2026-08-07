@@ -44,7 +44,8 @@ export default function ChatPage() {
   const { data: session, status: authStatus } = useSession();
   const { anonUser, isAnonLoading, logoutGuest } = useAnonymousAuth();
   const { isDark, toggleTheme } = useTheme();
-
+  const [firstMessageTracked, setFirstMessageTracked] = useState(false);
+  
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState("Searching...");
@@ -234,6 +235,15 @@ export default function ChatPage() {
 
   const sendMessage = () => {
     if (!message.trim()) return;
+    
+    if (
+    !firstMessageTracked &&
+    typeof window !== "undefined" &&
+    (window as any).gtag
+  ) {
+    (window as any).gtag("event", "first_message_sent");
+    setFirstMessageTracked(true);
+  }
 
     const id = generateId();
 
@@ -361,6 +371,7 @@ export default function ChatPage() {
       setStatus("Searching...");
       setShowStrangerMenu(false);
     };
+   
 
     const handleBlockedUsersList = (
       list: { userId: string; displayName: string; avatarUrl: string; isPremium?: boolean }[]
@@ -1297,7 +1308,7 @@ export default function ChatPage() {
 
                 (window as any).typingTimer = setTimeout(() => {
                   socket.emit("stopTyping");
-                }, 2000);
+                }, 4000);
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && status === "Connected") {

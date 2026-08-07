@@ -258,12 +258,19 @@ const faqJsonLd = {
       </p>
 
      <div className="mt-10 inline-block">
-  <a
-    href="/login"
-    className="inline-block rounded-full bg-blue-600 hover:bg-blue-700 hover:scale-105 transition duration-300 px-10 py-5 text-2xl font-semibold text-white shadow-[0_0_40px_rgba(59,130,246,0.6)]"
-  >
-    Start Chatting →
-  </a>
+     <a
+  href="/login"
+  onClick={() => {
+    if (typeof window !== "undefined" && (window as any).gtag) {
+      (window as any).gtag("event", "start_chatting_click", {
+        page_location: window.location.href,
+      });
+    }
+  }}
+  className="inline-block rounded-full bg-blue-600 hover:bg-blue-700 hover:scale-105 transition duration-300 px-10 py-5 text-2xl font-semibold text-white shadow-[0_0_40px_rgba(59,130,246,0.6)]"
+>
+  Start Chatting →
+</a>
 </div> 
       <p
         className={`mt-4 text-sm ${
