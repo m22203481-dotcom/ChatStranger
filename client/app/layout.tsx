@@ -36,6 +36,10 @@ export const metadata: Metadata = {
     "anonymous messaging",
     "ChatStranger",
   ],
+  icons: {
+  icon: "/icon.png",
+  apple: "/icon.png",
+},
 alternates: {
     canonical: "https://www.chatstranger.chat",
   },
@@ -51,6 +55,14 @@ alternates: {
     url: "https://www.chatstranger.chat",
     siteName: "ChatStranger",
     type: "website",
+    images: [
+  {
+    url: "/og-image.png",
+    width: 1200,
+    height: 630,
+    alt: "ChatStranger",
+  },
+],
   },
 
   twitter: {
@@ -58,7 +70,8 @@ alternates: {
     title: "ChatStranger - talk to Strangers Online Instantly",
     description:
       "Meet new people instantly through anonymous conversations and interest-based matching.",
-  },
+    images: ["/og-image.png"], 
+    },
 };
 
 export default function RootLayout({
