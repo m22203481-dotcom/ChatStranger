@@ -120,7 +120,7 @@ const faqJsonLd = {
 
 
       {/* SCROLL PROGRESS BAR */}
-      <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-transparent">
+      <div className="fixed top-0 left-0 right-0 z-[60] h-1 bg-transparent">
         <div
           className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 transition-[width] duration-150 ease-out"
           style={{ width: `${scrollProgress * 100}%` }}
@@ -143,79 +143,122 @@ const faqJsonLd = {
         style={{ transform: `translateY(${scrollY * -0.05}px)` }}
       ></div>
 
-      {/* Navbar */}
-      <nav className="relative z-20 flex items-center justify-end px-4 sm:px-10 py-4 sm:py-6">
-       <Image
-  src="/logo.png"
-  alt="ChatStranger"
-  width={240}
-  height={60}
-  priority
-  className="absolute left-1/2 -translate-x-1/2 h-auto w-[180px] sm:w-[220px]"
-/> 
+     {/* Navbar */}
+<nav
+  className={`fixed top-0 left-0 right-0 z-50 h-[76px] flex items-center px-4 sm:px-10 border-b backdrop-blur-xl transition-colors duration-300 ${
+    isDark
+      ? "bg-black/75 border-gray-800"
+      : "bg-white/80 border-gray-200"
+  }`}
+>
+  {/* LOGO — always perfectly centered */}
+  <Image
+    src="/logo.png"
+    alt="ChatStranger"
+    width={240}
+    height={60}
+    priority
+    className="absolute left-1/2 -translate-x-1/2 h-auto w-[150px] sm:w-[220px]"
+  />
 
-        <div className="flex items-center gap-3">
-          {/* THEME TOGGLE — left of the hamburger */}
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            title={isDark ? "Switch to light theme" : "Switch to dark theme"}
-            className={`w-10 h-10 flex items-center justify-center rounded-full border transition ${
-              isDark
-                ? "border-gray-700 hover:bg-gray-800"
-                : "border-gray-300 hover:bg-gray-100"
-            }`}
-          >
-            {isDark ? "☀️" : "🌙"}
-          </button>
+  {/* MOBILE START CHATTING — left side */}
+  <a
+    href="/login"
+    onClick={() => {
+      if (typeof window !== "undefined" && (window as any).gtag) {
+        (window as any).gtag("event", "start_chatting_click", {
+          page_location: window.location.href,
+          location: "navbar",
+        });
+      }
+    }}
+    className="lg:hidden px-3 sm:px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold transition hover:scale-105 whitespace-nowrap"
+  >
+    Start Chatting
+  </a>
 
-          {/* HAMBURGER MENU BUTTON */}
-          <button
-            onClick={() => setMenuOpen((prev) => !prev)}
-            aria-label="Open menu"
-            aria-expanded={menuOpen}
-            className={`w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-full border transition ${
-              isDark
-                ? "border-gray-700 hover:bg-gray-800"
-                : "border-gray-300 hover:bg-gray-100"
-            }`}
-          >
-            <span
-              className={`block w-5 h-0.5 rounded-full transition ${
-                menuOpen ? "translate-y-2 rotate-45" : ""
-              } ${isDark ? "bg-white" : "bg-black"}`}
-            />
-            <span
-              className={`block w-5 h-0.5 rounded-full transition ${
-                menuOpen ? "opacity-0" : ""
-              } ${isDark ? "bg-white" : "bg-black"}`}
-            />
-            <span
-              className={`block w-5 h-0.5 rounded-full transition ${
-                menuOpen ? "-translate-y-2 -rotate-45" : ""
-              } ${isDark ? "bg-white" : "bg-black"}`}
-            />
-          </button>
-        </div>
-      </nav>
+  {/* RIGHT CONTROLS */}
+  <div className="ml-auto flex items-center gap-2 sm:gap-3">
+
+    {/* DESKTOP START CHATTING — BEFORE THEME */}
+    <a
+      href="/login"
+      onClick={() => {
+        if (typeof window !== "undefined" && (window as any).gtag) {
+          (window as any).gtag("event", "start_chatting_click", {
+            page_location: window.location.href,
+            location: "navbar",
+          });
+        }
+      }}
+      className="hidden lg:block px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition hover:scale-105 whitespace-nowrap"
+    >
+      Start Chatting
+    </a>
+
+    {/* THEME TOGGLE */}
+    <button
+      onClick={toggleTheme}
+      aria-label="Toggle theme"
+      title={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      className={`w-10 h-10 flex items-center justify-center rounded-full border transition ${
+        isDark
+          ? "border-gray-700 hover:bg-gray-800"
+          : "border-gray-300 hover:bg-gray-100"
+      }`}
+    >
+      {isDark ? "☀️" : "🌙"}
+    </button>
+
+    {/* HAMBURGER MENU */}
+    <button
+      onClick={() => setMenuOpen((prev) => !prev)}
+      aria-label="Open menu"
+      aria-expanded={menuOpen}
+      className={`w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-full border transition ${
+        isDark
+          ? "border-gray-700 hover:bg-gray-800"
+          : "border-gray-300 hover:bg-gray-100"
+      }`}
+    >
+      <span
+        className={`block w-5 h-0.5 rounded-full transition ${
+          menuOpen ? "translate-y-2 rotate-45" : ""
+        } ${isDark ? "bg-white" : "bg-black"}`}
+      />
+
+      <span
+        className={`block w-5 h-0.5 rounded-full transition ${
+          menuOpen ? "opacity-0" : ""
+        } ${isDark ? "bg-white" : "bg-black"}`}
+      />
+
+      <span
+        className={`block w-5 h-0.5 rounded-full transition ${
+          menuOpen ? "-translate-y-2 -rotate-45" : ""
+        } ${isDark ? "bg-white" : "bg-black"}`}
+      />
+    </button>
+
+  </div>
+</nav>
 
       {/* Click-outside backdrop for the dropdown */}
-      {menuOpen && (
-        <div
-          className="fixed inset-0 z-10"
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
-
+     {menuOpen && (
+  <div
+    className="fixed inset-0 z-[40]"
+    onClick={() => setMenuOpen(false)}
+  />
+)} 
       {/* DROPDOWN MENU — drops down from the hamburger */}
       {menuOpen && (
-        <div
-          className={`relative z-20 mx-4 sm:mx-10 -mt-2 mb-2 rounded-2xl border overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ${
-            isDark
-              ? "bg-gray-950 border-gray-800"
-              : "bg-white border-gray-200 shadow-xl"
-          }`}
-        >
+  <div
+    className={`fixed top-[76px] right-4 sm:right-10 z-[55] w-56 rounded-2xl border overflow-hidden shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 ${
+      isDark
+        ? "bg-gray-950 border-gray-800"
+        : "bg-white border-gray-200"
+    }`}
+  > 
           {navLinks.map((link, i) => (
             <a
               key={link.label}
@@ -232,7 +275,7 @@ const faqJsonLd = {
       )}
 
       {/* Hero Section */}
-      <section className="relative z-10 mt-12 lg:mt-24 px-6">
+    <section className="relative z-10 pt-28 lg:pt-36 px-6">   
   <div className="max-w-7xl mx-auto lg:flex lg:items-center lg:gap-16">
 
     {/* LEFT SIDE */}
@@ -298,7 +341,7 @@ const faqJsonLd = {
   </div>
 
  <Image
-  src="/homepage-chat-preview.webp"
+  src="/chatstranger-hero.webp"
   alt="ChatStranger chat preview"
   width={1600}
   height={900}
@@ -484,6 +527,71 @@ const faqJsonLd = {
           ))}
         </div>
       </section>
+
+
+{/* FINAL CTA */}
+<section className="relative z-10 max-w-5xl mx-auto px-6 py-20">
+  <div
+    className={`relative overflow-hidden rounded-3xl border p-8 sm:p-12 lg:p-16 text-center ${
+      isDark
+        ? "bg-gradient-to-br from-gray-900 via-blue-950/40 to-gray-900 border-gray-800"
+        : "bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 border-blue-100"
+    }`}
+  >
+    {/* Decorative glow */}
+    <div className="absolute -top-24 -left-24 w-48 h-48 rounded-full bg-blue-500/20 blur-3xl pointer-events-none" />
+    <div className="absolute -bottom-24 -right-24 w-48 h-48 rounded-full bg-purple-500/20 blur-3xl pointer-events-none" />
+
+    <div className="relative z-10">
+      <h2
+        className={`text-3xl sm:text-4xl lg:text-5xl font-extrabold ${
+          isDark ? "text-white" : "text-gray-900"
+        }`}
+      >
+        Start Talking to Strangers.
+        <br />
+        <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+          Free, Right Now.
+        </span>
+      </h2>
+
+      <p
+        className={`mt-6 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed ${
+          isDark ? "text-gray-400" : "text-gray-700"
+        }`}
+      >
+        No download. No complicated sign-up. No waiting around.
+        ChatStranger connects you with real people for anonymous
+        conversations and interest-based matching instantly.
+      </p>
+
+      <a
+        href="/login"
+        onClick={() => {
+          if (typeof window !== "undefined" && (window as any).gtag) {
+            (window as any).gtag("event", "start_chatting_click", {
+              page_location: window.location.href,
+              location: "final_cta",
+            });
+          }
+        }}
+        className="inline-block mt-8 rounded-full bg-blue-600 hover:bg-blue-700 hover:scale-105 transition duration-300 px-8 sm:px-10 py-4 text-lg sm:text-xl font-semibold text-white shadow-[0_0_35px_rgba(59,130,246,0.5)]"
+      >
+        Start Chatting Free →
+      </a>
+
+      <p
+        className={`mt-4 text-sm ${
+          isDark ? "text-gray-500" : "text-gray-500"
+        }`}
+      >
+        ✨ Anonymous • Interest-Based Matching • Free to use
+      </p>
+    </div>
+  </div>
+</section>
+
+
 <section className="max-w-4xl mx-auto px-6 py-12">
   <h2 className="text-3xl font-bold text-center mb-8">
     Popular Topics

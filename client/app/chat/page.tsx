@@ -78,7 +78,7 @@ export default function ChatPage() {
   const [onboardingCountry, setOnboardingCountry] = useState("");
   const [onboardingAge, setOnboardingAge] = useState("");
   const [onboardingError, setOnboardingError] = useState<string | null>(null);
-
+  const [ageConsent, setAgeConsent] = useState(false);
   // Premium features
   const [isPremium, setIsPremium] = useState(false);
   const [genderPreference, setGenderPreference] = useState<string[]>([]);
@@ -495,7 +495,7 @@ export default function ChatPage() {
           <h1 className="text-3xl font-extrabold">Tell us about yourself</h1>
 
           <p className={`mt-2 text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-            This helps us match you better. Takes 10 seconds.
+            This helps us match you better.
           </p>
 
           {/* GENDER */}
@@ -537,37 +537,130 @@ export default function ChatPage() {
             ))}
           </select>
 
-          {/* AGE */}
-          <p className="text-sm font-semibold mt-6 mb-2 text-left">Age</p>
-          <input
-            type="number"
-            min={13}
-            max={100}
-            value={onboardingAge}
-            onChange={(e) => setOnboardingAge(e.target.value)}
-            onKeyDown={(e) => {
-    if (e.key === "Enter") {
+        {/* AGE */}
+<p className="text-sm font-semibold mt-6 mb-2 text-left">Age</p>
+
+<input
+  type="number"
+  min={18}
+  max={100}
+  value={onboardingAge}
+  onChange={(e) => {
+    setOnboardingAge(e.target.value);
+
+    // Reset consent if age is changed below 18
+    if (Number(e.target.value) < 18) {
+      setAgeConsent(false);
+    }
+  }}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" && ageConsent) {
       handleCompleteOnboarding();
     }
   }}
-            placeholder="Your age"
-            className={`w-full rounded-xl border px-4 py-2.5 text-base outline-none ${
-              isDark
-                ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500"
-                : "bg-gray-100 border-gray-300 text-black placeholder-gray-400"
-            }`}
-          />
+  placeholder="Your age"
+  className={`w-full rounded-xl border px-4 py-2.5 text-base outline-none ${
+    isDark
+      ? "bg-gray-800 border-gray-700 text-white placeholder-gray-500"
+      : "bg-gray-100 border-gray-300 text-black placeholder-gray-400"
+  }`}
+/>
+
+{/* AGE CONSENT */}
+<div className="mt-4 text-left">
+  <div className="flex items-start gap-3 text-sm">
+    <button
+      type="button"
+      onClick={() => {
+        if (Number(onboardingAge) < 18) {
+          setOnboardingError("You must be 18 or older to use ChatStranger.");
+          return;
+        }
+
+        setAgeConsent((prev) => !prev);
+        setOnboardingError("");
+      }}
+      className={`mt-1 h-4 w-4 shrink-0 rounded border flex items-center justify-center ${
+        ageConsent
+          ? "bg-blue-600 border-blue-600 text-white"
+          : isDark
+          ? "border-gray-600 bg-gray-800"
+          : "border-gray-400 bg-white"
+      }`}
+      aria-label="Confirm you are 18 years old"
+    >
+      {ageConsent && "✓"}
+    </button>
+
+    <div
+      className={`leading-5 ${
+        isDark ? "text-gray-300" : "text-gray-700"
+      }`}
+    >
+      I confirm that I am{" "}
+      <button
+        type="button"
+        onClick={() => {
+          if (Number(onboardingAge) < 18) {
+            setOnboardingError(
+              "You must be 18 or older to use ChatStranger."
+            );
+            return;
+          }
+
+          setAgeConsent((prev) => !prev);
+          setOnboardingError("");
+        }}
+        className="font-semibold underline"
+      >
+        18 years old
+      </button>{" "}
+      and agree to the{" "}
+      <a
+        href="/terms"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-semibold underline"
+      >
+        Terms of Service
+      </a>{" "}
+      and{" "}
+      <a
+        href="/privacy"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-semibold underline"
+      >
+        Privacy Policy
+      </a>
+      .
+    </div>
+  </div>
+
+  {Number(onboardingAge) > 0 && Number(onboardingAge) < 18 && (
+    <p className="mt-2 text-sm text-red-500">
+      You must be 18 or older to use ChatStranger.
+    </p>
+  )}
+</div>
 
           {onboardingError && (
             <p className="text-red-400 text-sm mt-3">{onboardingError}</p>
           )}
 
-          <button
-            onClick={handleCompleteOnboarding}
-            className="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition"
-          >
-            Get Started →
-          </button>
+        <button
+  onClick={handleCompleteOnboarding}
+  disabled={!ageConsent}
+  className={`w-full mt-8 font-semibold py-3.5 rounded-xl transition ${
+    ageConsent
+      ? "bg-blue-600 hover:bg-blue-700 text-white"
+      : isDark
+      ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+      : "bg-gray-200 text-gray-400 cursor-not-allowed"
+  }`}
+>
+  Get Started →
+</button>
         </div>
       </main>
     );
