@@ -494,6 +494,251 @@ const faqJsonLd = {
         </Reveal>
       </section>
 
+{/* WHY USE CHATSTRANGER */}
+<section className="relative z-10 max-w-6xl mx-auto px-6 pt-20 pb-12">
+  <Reveal>
+    <h2
+      className={`text-4xl lg:text-5xl font-extrabold text-center ${
+        isDark ? "text-white" : "text-gray-900"
+      }`}
+    >
+      Why Use ChatStranger?
+    </h2>
+
+    <p
+      className={`mt-5 text-lg text-center max-w-3xl mx-auto ${
+        isDark ? "text-gray-400" : "text-gray-700"
+      }`}
+    >
+      Everything you need to meet new people, start conversations,
+      and build genuine connections online.
+    </p>
+  </Reveal>
+
+  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+
+    {/* 1 */}
+    <Reveal>
+      <div
+        className={`h-full rounded-2xl p-6 text-center transition hover:-translate-y-2 ${
+          isDark
+            ? "bg-gray-900"
+            : "bg-gray-100 border border-gray-200"
+        }`}
+      >
+        <div className="text-4xl mb-4">💬</div>
+
+        <h3 className="text-xl font-bold">
+          Real Conversations
+        </h3>
+
+        <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-700"}`}>
+          Start talking to real people instead of endlessly scrolling
+          through profiles.
+        </p>
+      </div>
+    </Reveal>
+
+    {/* 2 */}
+    <Reveal delay={50}>
+      <div
+        className={`h-full rounded-2xl p-6 text-center transition hover:-translate-y-2 ${
+          isDark
+            ? "bg-gray-900"
+            : "bg-gray-100 border border-gray-200"
+        }`}
+      >
+        <div className="text-4xl mb-4">🎯</div>
+
+        <h3 className="text-xl font-bold">
+          Interest-Based Matching
+        </h3>
+
+        <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-700"}`}>
+          Find people who share your interests and have more meaningful
+          conversations.
+        </p>
+      </div>
+    </Reveal>
+
+    {/* 3 */}
+    <Reveal delay={100}>
+      <div
+        className={`h-full rounded-2xl p-6 text-center transition hover:-translate-y-2 ${
+          isDark
+            ? "bg-gray-900"
+            : "bg-gray-100 border border-gray-200"
+        }`}
+      >
+        <div className="text-4xl mb-4">👋</div>
+
+        <h3 className="text-xl font-bold">
+          Send Friend Requests
+        </h3>
+
+        <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-700"}`}>
+          Met someone you enjoyed talking to? Send them a friend request
+          and stay connected.
+        </p>
+      </div>
+    </Reveal>
+
+    {/* 4 */}
+    <Reveal delay={150}>
+      <div
+        className={`h-full rounded-2xl p-6 text-center transition hover:-translate-y-2 ${
+          isDark
+            ? "bg-gray-900"
+            : "bg-gray-100 border border-gray-200"
+        }`}
+      >
+        <div className="text-4xl mb-4">🤝</div>
+
+        <h3 className="text-xl font-bold">
+          Add Friends
+        </h3>
+
+        <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-700"}`}>
+          Build your own friend list and easily find people you've
+          connected with before.
+        </p>
+      </div>
+    </Reveal>
+
+    {/* 5 */}
+    <Reveal delay={200}>
+      <div
+        className={`h-full rounded-2xl p-6 text-center transition hover:-translate-y-2 ${
+          isDark
+            ? "bg-gray-900"
+            : "bg-gray-100 border border-gray-200"
+        }`}
+      >
+        <div className="text-4xl mb-4">🔒</div>
+
+        <h3 className="text-xl font-bold">
+          Anonymous & Private
+        </h3>
+
+        <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-700"}`}>
+          Chat with strangers without needing to reveal personal
+          information.
+        </p>
+      </div>
+    </Reveal>
+
+    {/* 6 */}
+    <Reveal delay={250}>
+      <div
+        className={`h-full rounded-2xl p-6 text-center transition hover:-translate-y-2 ${
+          isDark
+            ? "bg-gray-900"
+            : "bg-gray-100 border border-gray-200"
+        }`}
+      >
+        <div className="text-4xl mb-4">🚫</div>
+
+        <h3 className="text-xl font-bold">
+          Block & Report
+        </h3>
+
+        <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-700"}`}>
+          Block users you don't want to interact with and report
+          inappropriate behavior.
+        </p>
+      </div>
+    </Reveal>
+
+    {/* 7 */}
+    <Reveal delay={300}>
+      <div
+        className={`h-full rounded-2xl p-6 text-center transition hover:-translate-y-2 ${
+          isDark
+            ? "bg-gray-900"
+            : "bg-gray-100 border border-gray-200"
+        }`}
+      >
+        <div className="text-4xl mb-4">⚡</div>
+
+        <h3 className="text-xl font-bold">
+          Start Instantly
+        </h3>
+
+        <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-700"}`}>
+          No complicated setup. Choose your preferences and start
+          chatting in just a few clicks.
+        </p>
+      </div>
+    </Reveal>
+
+    {/* 8 */}
+    <Reveal delay={350}>
+      <div
+        className={`h-full rounded-2xl p-6 text-center transition hover:-translate-y-2 ${
+          isDark
+            ? "bg-gray-900"
+            : "bg-gray-100 border border-gray-200"
+        }`}
+      >
+        <div className="text-4xl mb-4">🙅</div>
+
+        <h3 className="text-xl font-bold">
+          No Registration Required
+        </h3>
+
+        <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-700"}`}>
+          Start chatting anonymously without creating an account.
+        </p>
+      </div>
+    </Reveal>
+
+    {/* 9 */}
+    <Reveal delay={400}>
+      <div
+        className={`h-full rounded-2xl p-6 text-center transition hover:-translate-y-2 ${
+          isDark
+            ? "bg-gray-900"
+            : "bg-gray-100 border border-gray-200"
+        }`}
+      >
+        <div className="text-4xl mb-4">🌎</div>
+
+        <h3 className="text-xl font-bold">
+          Meet People Worldwide
+        </h3>
+
+        <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-700"}`}>
+          Connect with people from different countries and discover
+          new perspectives.
+        </p>
+      </div>
+    </Reveal>
+
+    {/* 10 */}
+    <Reveal delay={450}>
+      <div
+        className={`h-full rounded-2xl p-6 text-center transition hover:-translate-y-2 ${
+          isDark
+            ? "bg-gray-900"
+            : "bg-gray-100 border border-gray-200"
+        }`}
+      >
+        <div className="text-4xl mb-4">✨</div>
+
+        <h3 className="text-xl font-bold">
+          Simple & Easy to Use
+        </h3>
+
+        <p className={`mt-3 ${isDark ? "text-gray-400" : "text-gray-700"}`}>
+          A clean, simple interface designed to keep the focus on
+          conversations—not complicated menus.
+        </p>
+      </div>
+    </Reveal>
+
+  </div>
+</section>
+
       {/* FAQ Section */}
 
 
@@ -504,6 +749,7 @@ const faqJsonLd = {
     isDark ? "text-white" : "text-gray-900"
   }`}
 >
+
   Frequently Asked Questions
 </h2>  
         </Reveal>
