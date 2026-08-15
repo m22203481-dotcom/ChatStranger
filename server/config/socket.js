@@ -1111,7 +1111,86 @@ export default function registerSocketEvents(io) {
             }
 
         });
+        socket.on("sendFriendRequestToUser", async ({ targetUserId }) => {
+    if (!socket.userId || !targetUserId) return;
 
+    if (socket.userId === targetUserId) return;
+
+    try {
+        // Find the target user's currently connected socket
+        let targetSocket = null;
+
+        for (const [, connectedSocket] of io.sockets.sockets) {
+            if (connectedSocket.userId === targetUserId) {
+                targetSocket = connectedSocket;
+                break;
+            }
+        }
+
+        if (!targetSocket) {
+            socket.emit("friendRequestStatus", {
+                status: "offline",
+                alreadyExists: false,
+            });
+            return;
+        }
+
+        const existing = await Friendship.findOne({
+            $or: [
+                {
+                    requester: socket.userId,
+                    recipient: targetUserId,
+                },
+                {
+                    requester: targetUserId,
+                    recipient: socket.userId,
+                },
+            ],
+        });
+
+        let friendship;
+
+        if (existing && existing.status !== "declined") {
+            socket.emit("friendRequestStatus", {
+                status: existing.status,
+                alreadyExists: true,
+            });
+            return;
+        }
+
+        if (existing) {
+            existing.requester = socket.userId;
+            existing.recipient = targetUserId;
+            existing.status = "pending";
+            existing.respondedAt = undefined;
+
+            friendship = await existing.save();
+        } else {
+            friendship = await Friendship.create({
+                requester: socket.userId,
+                recipient: targetUserId,
+                status: "pending",
+            });
+        }
+
+        const requesterProfile = socketProfiles.get(socket.id);
+
+        targetSocket.emit("friendRequestReceived", {
+            friendshipId: friendship._id,
+            fromUserId: socket.userId,
+            fromDisplayName: requesterProfile?.name,
+            fromAvatarUrl: requesterProfile?.avatarUrl,
+        });
+
+        socket.emit("friendRequestSent");
+
+    } catch (error) {
+        console.error(
+            "SEND FRIEND REQUEST TO USER ERROR:",
+            error
+        );
+    }
+});
         socket.on("respondFriendRequest", async ({ friendshipId, accept }) => {
 
             if (!socket.userId) return;
