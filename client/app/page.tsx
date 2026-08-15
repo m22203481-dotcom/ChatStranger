@@ -497,7 +497,7 @@ const faqJsonLd = {
       {/* FAQ Section */}
 
 
-      <section className="max-w-4xl mx-auto px-6 pt-12 pb-20">
+      <section className="max-w-4xl mx-auto px-6 pt-12 pb-2">
         <Reveal>
         <h2
   className={`text-4xl font-extrabold text-center mb-12 ${
@@ -592,7 +592,7 @@ const faqJsonLd = {
 </section>
 
 
-<section className="max-w-4xl mx-auto px-6 py-12">
+<section className="max-w-4xl mx-auto px-6 pt-0 py-12">
   <h2 className="text-3xl font-bold text-center mb-8">
     Popular Topics
   </h2>
