@@ -13,6 +13,7 @@ type ChatHeaderProps = {
   };
   onProfileClick: () => void;
   onFriendsClick: () => void;
+  onHistoryClick: () => void;
   hasUnreadDMs?: boolean;
   isDark: boolean;
   onToggleTheme: () => void;
@@ -28,6 +29,7 @@ export default function ChatHeader({
   profile,
   onProfileClick,
   onFriendsClick,
+  onHistoryClick,
   hasUnreadDMs,
   isDark,
   onToggleTheme,
@@ -202,6 +204,19 @@ export default function ChatHeader({
               </span>
             )}
           </button>
+          {/* HISTORY Button */}
+<button
+  onClick={onHistoryClick}
+  aria-label="Chat history"
+  title="Chat history"
+ className={`w-10 h-10 shrink-0 flex items-center justify-center rounded-full border transition ${
+  isDark
+    ? "border-gray-700 hover:bg-gray-800"
+    : "border-gray-300 hover:bg-gray-100"
+}`} 
+>
+  🕘
+</button>
         </div>
       </div>
 

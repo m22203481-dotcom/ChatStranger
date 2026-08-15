@@ -250,7 +250,16 @@ export default function useFriends({
   const sendFriendRequest = useCallback(() => {
     socket.emit("sendFriendRequest");
   }, []);
+  const sendFriendRequestToUser = useCallback(
+  (targetUserId: string) => {
+    if (!targetUserId) return;
 
+    socket.emit("sendFriendRequestToUser", {
+      targetUserId,
+    });
+  },
+  []
+);
   const respondToRequest = useCallback(
     (accept: boolean) => {
       if (!incomingRequest) return;
@@ -364,6 +373,7 @@ export default function useFriends({
     unreadCounts,
     hasUnreadDMs: Object.values(unreadCounts).some((c: number) => c > 0),
     sendFriendRequest,
+    sendFriendRequestToUser,
     respondToRequest,
     loadFriendsList,
     removeFriend,

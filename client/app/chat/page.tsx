@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import ChatHeader from "@/components/ChatHeader";
@@ -15,6 +16,14 @@ import useSocket, { SocketIdentity } from "@/app/hooks/useSocket";
 import useFriends from "@/app/hooks/useFriends";
 import { useAnonymousAuth } from "@/contexts/AnonymousAuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+
+type ChatHistoryItem = {
+  userId: string;
+  name: string;
+  avatarUrl: string;
+  isPremium?: boolean;
+  timestamp: number;
+};
 
 // Used by the onboarding screen's country select
 const COUNTRIES = [
@@ -48,6 +57,10 @@ export default function ChatPage() {
   
   const router = useRouter();
   const [message, setMessage] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyProfile, setHistoryProfile] = useState<ChatHistoryItem | null>(null);
+  const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [status, setStatus] = useState("Searching...");
   const [showMatchFound, setShowMatchFound] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -57,6 +70,19 @@ export default function ChatPage() {
   const [confirmNext, setConfirmNext] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+
+  useEffect(() => {
+  try {
+    const saved = localStorage.getItem("chatstranger_history");
+
+    if (saved) {
+      setChatHistory(JSON.parse(saved));
+    }
+  } catch (error) {
+    console.error("Failed to load chat history:", error);
+  }
+}, []);
+   
 
   // Interest-based matching
   const [interestInput, setInterestInput] = useState("");
@@ -68,7 +94,43 @@ export default function ChatPage() {
     isPremium?: boolean;
   } | null>(null);
   const [strangerUserId, setStrangerUserId] = useState<string | null>(null);
+  useEffect(() => {
+  if (
+    status !== "Connected" ||
+    !strangerUserId ||
+    !strangerProfile
+  ) {
+    return;
+  }
 
+  setChatHistory((prev) => {
+    const existing = prev.find(
+      (item) => item.userId === strangerUserId
+    );
+
+    // Don't add the same stranger repeatedly
+    if (existing) {
+      return prev;
+    }
+
+    const newHistoryItem: ChatHistoryItem = {
+      userId: strangerUserId,
+      name: strangerProfile.name,
+      avatarUrl: strangerProfile.avatarUrl,
+      isPremium: strangerProfile.isPremium,
+      timestamp: Date.now(),
+    };
+
+    const updated = [newHistoryItem, ...prev].slice(0, 50);
+
+    localStorage.setItem(
+      "chatstranger_history",
+      JSON.stringify(updated)
+    );
+
+    return updated;
+  });
+}, [status, strangerUserId, strangerProfile]);
   // Onboarding gate — shown once, right after login (guest or Google),
   // before any matching happens. null = not determined yet (still
   // waiting on identityResolved), true = still needs to fill it in,
@@ -264,7 +326,10 @@ export default function ChatPage() {
 
     setMessage("");
   };
-
+ const handleEmojiClick = (emojiData: EmojiClickData) => {
+  setMessage((prev) => prev + emojiData.emoji);
+  setShowEmojiPicker(false);
+};
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -681,6 +746,7 @@ export default function ChatPage() {
           setShowProfileMenu(true);
         }}
         onFriendsClick={openFriendsPanel}
+        onHistoryClick={() => setShowHistory(true)} 
         hasUnreadDMs={friends.hasUnreadDMs}
         isDark={isDark}
         onToggleTheme={toggleTheme}
@@ -1073,7 +1139,332 @@ export default function ChatPage() {
           </div>
         </div>
       )}
+  {/* CHAT HISTORY */}
+{showHistory && (
+  <div className="fixed inset-0 z-50 flex justify-end">
 
+    {/* BACKDROP */}
+    <div
+      className="absolute inset-0 bg-black/60"
+      onClick={() => setShowHistory(false)}
+    />
+
+    {/* HISTORY PANEL */}
+    <div
+      className={`relative w-full max-w-[300px] h-full flex flex-col border-l transition-colors ${
+        isDark
+          ? "bg-gray-950 border-gray-800 text-white"
+          : "bg-white border-gray-200 text-black shadow-xl"
+      }`}
+    >
+
+      {/* HEADER */}
+      <div
+        className={`flex items-center justify-between px-4 py-4 border-b ${
+          isDark
+            ? "border-gray-800"
+            : "border-gray-200"
+        }`}
+      >
+
+        <div className="flex items-center gap-2">
+          <span className="text-xl">
+            🕘
+          </span>
+
+          <div>
+            <h2 className="font-semibold text-sm">
+              Chat History
+            </h2>
+
+            <p
+              className={`text-[10px] ${
+                isDark
+                  ? "text-gray-500"
+                  : "text-gray-400"
+              }`}
+            >
+              Recent stranger chats
+            </p>
+          </div>
+        </div>
+
+        {/* CLOSE */}
+        <button
+          onClick={() => setShowHistory(false)}
+          aria-label="Close history"
+          className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
+            isDark
+              ? "hover:bg-gray-800 text-gray-300"
+              : "hover:bg-gray-100 text-gray-600"
+          }`}
+        >
+          ✕
+        </button>
+
+      </div>
+
+
+      {/* HISTORY LIST */}
+      <div className="flex-1 overflow-y-auto p-2">
+
+        {chatHistory.length === 0 ? (
+
+          /* EMPTY STATE */
+          <div className="flex flex-col items-center justify-center h-full text-center px-4">
+
+            <div className="text-4xl mb-3">
+              🕘
+            </div>
+
+            <p
+              className={`text-sm ${
+                isDark
+                  ? "text-gray-400"
+                  : "text-gray-500"
+              }`}
+            >
+              No chat history yet.
+            </p>
+
+            <p
+              className={`text-xs mt-1 ${
+                isDark
+                  ? "text-gray-600"
+                  : "text-gray-400"
+              }`}
+            >
+              Your recent stranger chats will appear here.
+            </p>
+
+          </div>
+
+        ) : (
+
+          /* HISTORY ITEMS */
+          <div className="space-y-1">
+
+            {chatHistory.map((item) => (
+
+              <button
+                key={`${item.userId}-${item.timestamp}`}
+                onClick={() => {
+  setHistoryProfile(item);
+}}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition ${
+                  isDark
+                    ? "hover:bg-gray-900"
+                    : "hover:bg-gray-100"
+                }`}
+              >
+
+                {/* AVATAR */}
+                <div className="relative shrink-0">
+
+                  <img
+                    src={
+                      item.avatarUrl ||
+                      "/default-avatar.png"
+                    }
+                    alt={
+                      item.name ||
+                      "Stranger"
+                    }
+                    referrerPolicy="no-referrer"
+                    className={`w-10 h-10 rounded-full border ${
+                      isDark
+                        ? "border-gray-700"
+                        : "border-gray-200"
+                    }`}
+                  />
+
+                  {/* PREMIUM */}
+                  {item.isPremium && (
+                    <span className="absolute -top-1 -right-1 text-xs">
+                      👑
+                    </span>
+                  )}
+
+                </div>
+
+
+                {/* USER INFO */}
+                <div className="min-w-0 flex-1">
+
+                  <p className="font-medium text-sm truncate">
+                    {item.name || "Stranger"}
+                  </p>
+
+                  <p
+                    className={`text-[10px] mt-0.5 ${
+                      isDark
+                        ? "text-gray-500"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {new Date(
+                      item.timestamp
+                    ).toLocaleString([], {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
+                  </p>
+
+                </div>
+
+
+                {/* ARROW */}
+                <span
+                  className={`text-lg ${
+                    isDark
+                      ? "text-gray-600"
+                      : "text-gray-400"
+                  }`}
+                >
+                  ›
+                </span>
+
+              </button>
+
+            ))}
+
+          </div>
+
+        )}
+
+      </div>
+
+
+      {/* FOOTER */}
+      {chatHistory.length > 0 && (
+        <div
+          className={`px-4 py-3 border-t ${
+            isDark
+              ? "border-gray-800"
+              : "border-gray-200"
+          }`}
+        >
+
+          <p
+            className={`text-[10px] text-center ${
+              isDark
+                ? "text-gray-600"
+                : "text-gray-400"
+            }`}
+          >
+            Last {chatHistory.length} chats
+          </p>
+
+        </div>
+      )}
+
+    </div>
+  </div>
+)}
+{/* HISTORY PROFILE CARD */}
+{historyProfile && (
+  <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+
+    {/* Backdrop */}
+    <div
+      className="absolute inset-0 bg-black/60"
+      onClick={() => setHistoryProfile(null)}
+    />
+
+    {/* Profile Card */}
+    <div
+      onClick={(e) => e.stopPropagation()}
+      className={`relative w-full max-w-xs rounded-2xl border p-5 shadow-2xl ${
+        isDark
+          ? "bg-gray-950 border-gray-800 text-white"
+          : "bg-white border-gray-200 text-black"
+      }`}
+    >
+
+      {/* Close */}
+      <button
+        onClick={() => setHistoryProfile(null)}
+        aria-label="Close profile"
+        className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center ${
+          isDark
+            ? "hover:bg-gray-800 text-gray-400"
+            : "hover:bg-gray-100 text-gray-500"
+        }`}
+      >
+        ✕
+      </button>
+
+      {/* Avatar + Name */}
+      <div className="flex flex-col items-center pt-2">
+        <div className="relative">
+          <img
+            src={historyProfile.avatarUrl || "/default-avatar.png"}
+            alt={historyProfile.name || "Stranger"}
+            referrerPolicy="no-referrer"
+            className={`w-20 h-20 rounded-full border-2 ${
+              isDark
+                ? "border-gray-700"
+                : "border-gray-200"
+            }`}
+          />
+
+          {historyProfile.isPremium && (
+            <span className="absolute -top-1 -right-1 text-lg">
+              👑
+            </span>
+          )}
+        </div>
+
+        <h3 className="mt-3 text-lg font-semibold">
+          {historyProfile.name || "Stranger"}
+        </h3>
+
+        <p
+          className={`text-xs mt-1 ${
+            isDark ? "text-gray-500" : "text-gray-400"
+          }`}
+        >
+          Previous chat
+        </p>
+      </div>
+
+      {/* ACTIONS */}
+      <div className="mt-5 space-y-2">
+
+        {/* ADD FRIEND */}
+        <button
+          onClick={() => {
+            friends.sendFriendRequestToUser(
+              historyProfile.userId
+            );
+            setHistoryProfile(null);
+          }}
+          className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
+        >
+          ➕ Add Friend
+        </button>
+
+        {/* BLOCK */}
+        <button
+          onClick={() => {
+            friends.blockFriend(
+              historyProfile.userId
+            );
+            setHistoryProfile(null);
+          }}
+          className={`w-full py-2.5 rounded-xl font-semibold transition ${
+            isDark
+              ? "bg-gray-800 hover:bg-gray-700 text-white"
+              : "bg-gray-100 hover:bg-gray-200 text-black"
+          }`}
+        >
+          🚫 Block
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
       {showReport && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
         <div
@@ -1366,19 +1757,6 @@ export default function ChatPage() {
   {confirmNext ? "Confirm" : "Next"}
 </button>  
 
-          {/* UNDO BUTTON — icon-only so it doesn't crowd the message input */}
-          <button
-            onClick={() => (isPremium ? handleUndoSkip() : setShowPremiumModal(true))}
-            title={isPremium ? "Go back to the last stranger" : "Undo — premium feature"}
-            className={`h-11 w-11 shrink-0 flex items-center justify-center rounded-full text-sm border ${
-  isDark
-    ? "bg-gray-800 hover:bg-gray-700 border-gray-700"
-    : "bg-white hover:bg-gray-100 border-gray-300 shadow-sm"
-}`}
-          >
-            ↩{!isPremium && <span className="text-[10px] ml-0.5">🔒</span>}
-          </button>
-
           {/* MESSAGE INPUT with attach button inside, at the right */}
           <input
             type="file"
@@ -1413,13 +1791,43 @@ export default function ChatPage() {
                   ? "Type a message..."
                   : "Waiting for stranger..."
               }
-              className={`w-full rounded-full pl-4 pr-11 py-3 text-base outline-none border transition ${
+              className={`w-full rounded-full pl-12 pr-11 py-3 text-base outline-none border transition ${
                 isDark
                   ? "bg-gray-900 text-white placeholder-gray-500 border-gray-800"
                   : "bg-gray-100 text-black placeholder-gray-400 border-gray-300"
               }`}
             />
+            {/* EMOJI BUTTON */}
+<button
+  type="button"
+  onClick={() => setShowEmojiPicker((prev) => !prev)}
+  disabled={status !== "Connected"}
+  aria-label="Open emoji picker"
+  title="Emoji"
+  className={`absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full text-xl transition ${
+    status === "Connected"
+      ? isDark
+        ? "hover:bg-gray-700 text-gray-300"
+        : "hover:bg-gray-200 text-gray-600"
+      : "text-gray-600 cursor-not-allowed"
+  }`}
+>
+  😊
+</button>
 
+{/* EMOJI PICKER */}
+{showEmojiPicker && status === "Connected" && (
+  <div className="absolute bottom-14 left-0 z-50">
+    <EmojiPicker
+      onEmojiClick={handleEmojiClick}
+     theme={isDark ? Theme.DARK : Theme.LIGHT} 
+      width={320}
+      height={400}
+      searchDisabled={false}
+      skinTonesDisabled={false}
+    />
+  </div>
+)}
             <button
               onClick={() => {
                 if (!isPremium) {
@@ -1439,23 +1847,35 @@ export default function ChatPage() {
               {isUploading ? "..." : "📎"}
             </button>
           </div>
-
-          {/* SEND BUTTON */}
-          <button
-            onClick={sendMessage}
-            disabled={status !== "Connected"}
-            className={`h-11 shrink-0 px-4 rounded-full text-sm font-semibold whitespace-nowrap ${
-            status === "Connected"
-  ? isDark
-    ? "bg-blue-600 hover:bg-blue-700"
-    : "bg-blue-500 hover:bg-blue-600 text-white"
-  : isDark
-  ? "bg-gray-700 cursor-not-allowed"
-  : "bg-gray-300 text-gray-500 cursor-not-allowed"  
-            }`}
-          >
-            Send
-          </button>
+{/* SEND BUTTON */}
+<button
+  onClick={sendMessage}
+  disabled={status !== "Connected"}
+  aria-label="Send message"
+  title="Send message"
+  className={`h-11 w-11 shrink-0 rounded-full flex items-center justify-center transition-all ${
+    status === "Connected"
+      ? "bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 hover:scale-105 shadow-lg shadow-purple-500/20"
+      : isDark
+        ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+        : "bg-gray-300 text-gray-400 cursor-not-allowed"
+  }`}
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="w-5 h-5 text-white rotate-45"
+  >
+    <path d="M22 2L11 13" />
+    <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+  </svg>
+</button>
+          
         </div>
       </footer>
     </main>

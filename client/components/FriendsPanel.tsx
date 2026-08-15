@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import type { Friend, FriendMessage } from "@/app/hooks/useFriends";
 import { uploadToCloudinary } from "@/lib/uploadToCloudinary";
 
@@ -47,6 +48,7 @@ export default function FriendsPanel({
   isDark,
 }: FriendsPanelProps) {
   const [draft, setDraft] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [openMenuFor, setOpenMenuFor] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -92,6 +94,10 @@ export default function FriendsPanel({
       setIsUploading(false);
     }
   };
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+  setDraft((prev) => prev + emojiData.emoji);
+  setShowEmojiPicker(false);
+};
 
   // Border color used for the little dots/badges layered on avatars —
   // needs to match whatever background sits behind them so the dot
@@ -239,13 +245,42 @@ export default function FriendsPanel({
                     if (e.key === "Enter") handleSend();
                   }}
                   placeholder="Message..."
-                  className={`w-full rounded-full border pl-4 pr-11 py-2.5 text-base outline-none transition ${
+                  className={`w-full rounded-full border pl-12 pr-11 py-2.5 text-base outline-none transition ${
                     isDark
                       ? "bg-gray-900 border-gray-800 text-white placeholder-gray-500"
                       : "bg-gray-100 border-gray-300 text-black placeholder-gray-400"
                   }`}
                 />
 
+
+                 {/* EMOJI BUTTON */}
+                <button
+                 type="button"
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
+                 aria-label="Open emoji picker"
+                 title="Emoji"
+                 className={`absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full text-xl transition ${
+                 isDark
+                 ? "hover:bg-gray-700 text-gray-300"
+                 : "hover:bg-gray-200 text-gray-600"
+                 }`}
+                  >
+                  😊
+                </button>
+
+                 {/* EMOJI PICKER */}
+                 {showEmojiPicker && (
+                <div className="absolute bottom-14 left-0 z-50">
+                <EmojiPicker
+                   onEmojiClick={handleEmojiClick}
+                    theme={isDark ? Theme.DARK : Theme.LIGHT}
+                    width={320}
+                    height={400}
+                    searchDisabled={false}
+                    skinTonesDisabled={false}
+                    />
+               </div>
+                )}
                 <button
                   onClick={() => {
                     if (!isPremium) {
@@ -268,16 +303,34 @@ export default function FriendsPanel({
                 </button>
               </div>
 
-              <button
-                onClick={handleSend}
-               className={`h-11 shrink-0 text-white px-4 rounded-full text-sm font-semibold ${
-  isDark
-    ? "bg-blue-600 hover:bg-blue-700"
-    : "bg-blue-500 hover:bg-blue-600 shadow-sm"
-}`} 
-              >
-                Send
-              </button>
+             {/* SEND BUTTON */}
+<button
+  onClick={handleSend}
+  disabled={!draft.trim()}
+  aria-label="Send message"
+  title="Send message"
+  className={`h-11 w-11 shrink-0 rounded-full flex items-center justify-center transition-all ${
+    draft.trim()
+      ? "bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 hover:scale-105 shadow-lg shadow-purple-500/20"
+      : isDark
+        ? "bg-gray-700 text-gray-500 cursor-not-allowed"
+        : "bg-gray-300 text-gray-400 cursor-not-allowed"
+  }`}
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="w-5 h-5 text-white rotate-45"
+  >
+    <path d="M22 2L11 13" />
+    <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+  </svg>
+</button> 
             </div>
           </>
         ) : (
