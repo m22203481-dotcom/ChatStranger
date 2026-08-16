@@ -54,7 +54,23 @@ export default function FriendsPanel({
   const [openMenuFor, setOpenMenuFor] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  
+  const [isClosing, setIsClosing] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const [dragX, setDragX] = useState(0);
+  const [isOpening, setIsOpening] = useState(false);
+  useEffect(() => {
+  if (isOpen) {
+    setIsClosing(false);
+    setIsOpening(true);
 
+    const timer = setTimeout(() => {
+      setIsOpening(false);
+    }, 20);
+
+    return () => clearTimeout(timer);
+  }
+}, [isOpen]);
   // Auto-scroll to the latest message, same pattern as the stranger-chat
   // ChatMessages component. Also fires when the conversationId changes,
   // so switching to a different friend's chat starts scrolled to bottom.
@@ -126,21 +142,84 @@ useEffect(() => {
   // needs to match whatever background sits behind them so the dot
   // reads as a clean cutout in both themes
   const avatarBadgeBorder = isDark ? "border-gray-950" : "border-white";
+  const handleTouchStart = (e: React.TouchEvent) => {
+  touchStartX.current = e.touches[0].clientX;
+};
 
+const handleTouchMove = (e: React.TouchEvent) => {
+  if (touchStartX.current === null) return;
+
+  const currentX = e.touches[0].clientX;
+  const distance = currentX - touchStartX.current;
+
+  // Only allow dragging to the left
+  if (distance < 0) {
+    setDragX(distance);
+  }
+};
+
+const handleTouchEnd = (e: React.TouchEvent) => {
+  if (touchStartX.current === null) return;
+
+  const touchEndX = e.changedTouches[0].clientX;
+  const distance = touchEndX - touchStartX.current;
+
+  if (distance < -80) {
+    setIsClosing(true);
+
+    // Reset drag so the closing animation can take over
+    setDragX(0);
+
+    setTimeout(() => {
+      onClose();
+    }, 500);
+  } else {
+    // Smoothly return to the original position
+    setDragX(0);
+  }
+
+  touchStartX.current = null;
+};
   return (
-    <div className="fixed inset-0 z-50 flex justify-start p-3 sm:p-4 pointer-events-none">
-     <div
+   <div
+  className="fixed inset-0 z-50 flex justify-start p-3 sm:p-4 pointer-events-none"
+>
+  <div
   className="absolute inset-0 bg-black/60 pointer-events-auto"
-  onClick={onClose}
-/> 
+  onClick={() => {
+    setIsClosing(true);
 
-      <div
-        className={`relative w-[min(360px,calc(100vw-1.5rem))] h-[min(700px,calc(100dvh-1.5rem))] rounded-2xl border shadow-2xl overflow-hidden flex flex-col transition-colors pointer-events-auto ${
-          isDark
-            ? "bg-gray-950 border-gray-800 text-white"
-            : "bg-white border-gray-200 text-black shadow-xl"
-        }`}
-      >
+    setTimeout(() => {
+      onClose();
+    }, 500);
+  }}
+/>
+
+<div
+  onTouchStart={handleTouchStart}
+  onTouchMove={handleTouchMove}
+  onTouchEnd={handleTouchEnd}
+  style={
+    isClosing || isOpening
+      ? undefined
+      : {
+          transform: `translateX(${dragX}px)`,
+        }
+  }
+  className={`relative w-[min(360px,calc(100vw-1.5rem))] h-[min(700px,calc(100dvh-1.5rem))] rounded-2xl border shadow-2xl overflow-hidden flex flex-col pointer-events-auto ${
+    isClosing
+      ? "-translate-x-full transition-transform duration-500 ease-out"
+      : isOpening
+      ? "-translate-x-full"
+      : dragX === 0
+      ? "translate-x-0 transition-transform duration-500 ease-out"
+      : ""
+  } ${
+    isDark
+      ? "bg-gray-950 border-gray-800 text-white"
+      : "bg-white border-gray-200 text-black shadow-xl"
+  }`}
+>
         {activeFriendChat ? (
           <>
             <div className={`flex items-center gap-2 p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] border-b ${isDark ? "border-gray-800" : "border-gray-200"}`}>
@@ -183,7 +262,13 @@ useEffect(() => {
               </span>
 
               <button
-                onClick={onClose}
+                onClick={() => {
+  setIsClosing(true);
+
+  setTimeout(() => {
+    onClose();
+  }, 500);
+}}
                 aria-label="Close friends panel"
                 className={`ml-auto w-9 h-9 shrink-0 -mr-1 flex items-center justify-center rounded-full text-xl transition ${
                   isDark ? "text-gray-400 hover:text-white hover:bg-gray-800" : "text-gray-500 hover:text-black hover:bg-gray-100"
@@ -370,7 +455,13 @@ useEffect(() => {
               <h2 className="font-bold text-lg">Friends</h2>
 
               <button
-                onClick={onClose}
+               onClick={() => {
+  setIsClosing(true);
+
+  setTimeout(() => {
+    onClose();
+  }, 500);
+}} 
                 aria-label="Close friends panel"
                 className={`ml-auto w-9 h-9 shrink-0 -mr-1 flex items-center justify-center rounded-full text-xl transition ${
                   isDark ? "text-gray-400 hover:text-white hover:bg-gray-800" : "text-gray-500 hover:text-black hover:bg-gray-100"

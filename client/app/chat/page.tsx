@@ -60,6 +60,58 @@ export default function ChatPage() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+
+  const [historyIsClosing, setHistoryIsClosing] = useState(false);
+  const [historyIsOpening, setHistoryIsOpening] = useState(false);
+  const historyTouchStartX = useRef<number | null>(null);
+  const [historyDragX, setHistoryDragX] = useState(0); 
+  useEffect(() => {
+  if (showHistory) {
+    setHistoryIsClosing(false);
+    setHistoryDragX(0);
+    setHistoryIsOpening(true);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setHistoryIsOpening(false);
+      });
+    });
+  }
+}, [showHistory]);
+ const handleHistoryTouchStart = (e: React.TouchEvent) => {
+  historyTouchStartX.current = e.touches[0].clientX;
+};
+
+const handleHistoryTouchMove = (e: React.TouchEvent) => {
+  if (historyTouchStartX.current === null) return;
+
+  const currentX = e.touches[0].clientX;
+  const distance = currentX - historyTouchStartX.current;
+
+  // History panel is on the right, so only allow dragging right
+  if (distance > 0) {
+    setHistoryDragX(distance);
+  }
+};
+
+const handleHistoryTouchEnd = () => {
+  if (historyTouchStartX.current === null) return;
+
+  // Swipe right → close
+  if (historyDragX > 80) {
+    setHistoryIsClosing(true);
+    setHistoryDragX(0);
+
+    setTimeout(() => {
+      setShowHistory(false);
+    }, 250);
+  } else {
+    // Snap back
+    setHistoryDragX(0);
+  }
+
+  historyTouchStartX.current = null;
+};
   const [historyProfile, setHistoryProfile] = useState<ChatHistoryItem | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [status, setStatus] = useState("Searching...");
@@ -1196,20 +1248,43 @@ const addToChatHistory = () => {
 {showHistory && (
   <div className="fixed inset-0 z-50 flex justify-end">
 
-    {/* BACKDROP */}
-    <div
-      className="absolute inset-0 bg-black/60"
-      onClick={() => setShowHistory(false)}
-    />
+   {/* BACKDROP */}
+<div
+  className="absolute inset-0 bg-black/60"
+  onClick={() => {
+    setHistoryIsClosing(true);
+
+    setTimeout(() => {
+      setShowHistory(false);
+      setHistoryIsClosing(false);
+    }, 500);
+  }}
+/>
 
     {/* HISTORY PANEL */}
     <div
-      className={`relative w-full max-w-[300px] h-full flex flex-col border-l transition-colors ${
-        isDark
-          ? "bg-gray-950 border-gray-800 text-white"
-          : "bg-white border-gray-200 text-black shadow-xl"
-      }`}
-    >
+  onTouchStart={handleHistoryTouchStart}
+  onTouchMove={handleHistoryTouchMove}
+  onTouchEnd={handleHistoryTouchEnd}
+  style={
+    historyIsClosing || historyIsOpening
+      ? undefined
+      : {
+          transform: `translateX(${historyDragX}px)`,
+        }
+  }
+  className={`relative w-full max-w-[300px] h-full flex flex-col border-l ${
+    historyIsClosing
+      ? "translate-x-full transition-transform duration-500 ease-out"
+      : historyIsOpening
+      ? "translate-x-full"
+      : "translate-x-0 transition-transform duration-500 ease-out"
+  } ${
+    isDark
+      ? "bg-gray-950 border-gray-800 text-white"
+      : "bg-white border-gray-200 text-black shadow-xl"
+  }`}
+>
 
       {/* HEADER */}
       <div
@@ -1244,7 +1319,14 @@ const addToChatHistory = () => {
 
         {/* CLOSE */}
         <button
-          onClick={() => setShowHistory(false)}
+          onClick={() => {
+  setHistoryIsClosing(true);
+
+  setTimeout(() => {
+    setShowHistory(false);
+    setHistoryIsClosing(false);
+  }, 400);
+}}
           aria-label="Close history"
           className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
             isDark
