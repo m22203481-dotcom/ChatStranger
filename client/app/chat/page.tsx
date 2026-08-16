@@ -261,7 +261,25 @@ export default function ChatPage() {
   const strangerIsFriend = !!(
     strangerUserId && friends.friends.some((f) => f.userId === strangerUserId)
   );
+const addToChatHistory = () => {
+  if (!strangerUserId || !strangerProfile) return;
 
+  const historyItem: ChatHistoryItem = {
+    userId: strangerUserId,
+    name: strangerProfile.name || "Stranger",
+    avatarUrl: strangerProfile.avatarUrl || "/default-avatar.png",
+    isPremium: strangerProfile.isPremium,
+    timestamp: Date.now(),
+  };
+
+  setChatHistory((prev) => {
+    const filtered = prev.filter(
+      (item) => item.userId !== historyItem.userId
+    );
+
+    return [historyItem, ...filtered].slice(0, 50);
+  });
+};
   const addInterest = () => {
    const tag =
   interestInput.trim().charAt(0).toUpperCase() +
@@ -398,6 +416,8 @@ export default function ChatPage() {
 
       return;
     }
+
+    addToChatHistory();
 
     socket.emit("nextStranger");
 
