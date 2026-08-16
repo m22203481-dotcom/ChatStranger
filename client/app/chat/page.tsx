@@ -639,7 +639,7 @@ const addToChatHistory = () => {
   if (needsOnboarding) {
     return (
       <main
-        className={`relative min-h-dvh overflow-hidden flex items-center justify-center px-4 sm:px-6 transition-colors duration-300 ${
+        className={`relative min-h-dvh overflow-hidden flex items-center justify-center px-4 sm:px-6 transition-colors duration-500 ${
           isDark
             ? "bg-gradient-to-b from-black via-gray-900 to-black text-white"
             : "bg-gradient-to-b from-white via-gray-100 to-white text-black"
@@ -1070,7 +1070,7 @@ const addToChatHistory = () => {
         message list; opening up uses the space under the header) */}
     {showStrangerMenu && (
       <div
-        className={`absolute left-0 bottom-full mb-2 w-48 rounded-2xl border overflow-hidden z-40 animate-in fade-in slide-in-from-bottom-2 duration-200 ${
+        className={`absolute left-0 bottom-full mb-2 w-48 rounded-2xl border overflow-hidden z-40 animate-in fade-in slide-in-from-bottom-2 duration-400 ${
           isDark ? "bg-gray-950 border-gray-800" : "bg-white border-gray-200 shadow-xl"
         }`}
       >
