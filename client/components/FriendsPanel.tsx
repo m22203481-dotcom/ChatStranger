@@ -128,14 +128,14 @@ useEffect(() => {
   const avatarBadgeBorder = isDark ? "border-gray-950" : "border-white";
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-start">
-      <div
-        className="absolute inset-0 bg-black/60"
-        onClick={onClose}
-      />
+    <div className="fixed inset-0 z-50 flex justify-start p-3 sm:p-4 pointer-events-none">
+     <div
+  className="absolute inset-0 bg-black/60 pointer-events-auto"
+  onClick={onClose}
+/> 
 
       <div
-        className={`relative w-full max-w-sm h-full flex flex-col border-r transition-colors ${
+        className={`relative w-[min(360px,calc(100vw-1.5rem))] h-[min(700px,calc(100dvh-1.5rem))] rounded-2xl border shadow-2xl overflow-hidden flex flex-col transition-colors pointer-events-auto ${
           isDark
             ? "bg-gray-950 border-gray-800 text-white"
             : "bg-white border-gray-200 text-black shadow-xl"

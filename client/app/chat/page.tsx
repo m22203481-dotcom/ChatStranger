@@ -686,7 +686,7 @@ const addToChatHistory = () => {
         setAgeConsent((prev) => !prev);
         setOnboardingError("");
       }}
-      className={`mt-1 h-4 w-4 shrink-0 rounded border flex items-center justify-center ${
+      className={`mt-1 h-6 w-6 shrink-0 rounded-md border flex items-center justify-center text-base ${
         ageConsent
           ? "bg-blue-600 border-blue-600 text-white"
           : isDark
