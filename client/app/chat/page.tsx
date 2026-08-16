@@ -68,6 +68,7 @@ export default function ChatPage() {
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [reportUserId, setReportUserId] = useState<string | null>(null);
   const [confirmNext, setConfirmNext] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -775,11 +776,6 @@ const addToChatHistory = () => {
     <main className={`h-dvh flex flex-col overflow-hidden transition-colors duration-300 ${isDark ? "bg-black text-white" : "bg-white text-black"}`}>
       <ChatHeader
         status={status}
-        onReport={() => {
-          if (status === "Connected") {
-            setShowReport(true);
-          }
-        }}
         profile={profile}
         onProfileClick={() => {
           friends.loadFriendsList();
@@ -1045,16 +1041,33 @@ const addToChatHistory = () => {
         </button>
 
         <button
-          onClick={() => {
-            socket.emit("blockUser");
-            setShowStrangerMenu(false);
-          }}
-          className={`w-full text-left flex items-center gap-2 px-4 py-3 text-sm font-medium border-t transition text-red-400 ${
-            isDark ? "border-gray-800 hover:bg-gray-800" : "border-gray-200 hover:bg-gray-100"
-          }`}
-        >
-          🚫 Block
-        </button>
+  onClick={() => {
+    socket.emit("blockUser");
+    setShowStrangerMenu(false);
+  }}
+  className={`w-full text-left flex items-center gap-2 px-4 py-3 text-sm font-medium border-t transition text-red-400 ${
+    isDark
+      ? "border-gray-800 hover:bg-gray-800"
+      : "border-gray-200 hover:bg-gray-100"
+  }`}
+>
+  🚫 Block
+</button>
+
+<button
+  onClick={() => {
+    setShowStrangerMenu(false);
+    setReportReason("");
+    setShowReport(true);
+  }}
+  className={`w-full text-left flex items-center gap-2 px-4 py-3 text-sm font-medium border-t transition text-yellow-500 ${
+    isDark
+      ? "border-gray-800 hover:bg-gray-800"
+      : "border-gray-200 hover:bg-gray-100"
+  }`}
+>
+  ⚠️ Report
+</button>
       </div>
     )}
   </div>
@@ -1473,18 +1486,21 @@ const addToChatHistory = () => {
       <div className="mt-5 space-y-2">
 
        {/* ADD FRIEND / ALREADY FRIENDS */}
-{friends.friends.some(
+      {friends.friends.some(
   (friend) => friend.userId === historyProfile.userId
 ) ? (
   <button
-    disabled
-    className={`w-full py-2.5 rounded-xl font-semibold cursor-default ${
+    onClick={() => {
+      friends.removeFriend(historyProfile.userId);
+      setHistoryProfile(null);
+    }}
+    className={`w-full py-2.5 rounded-xl font-semibold transition ${
       isDark
-        ? "bg-gray-800 text-green-400"
-        : "bg-gray-100 text-green-600"
+        ? "bg-gray-800 hover:bg-gray-700 text-white"
+        : "bg-gray-100 hover:bg-gray-200 text-black"
     }`}
   >
-    ✓ Friends
+    💔 Remove Friend
   </button>
 ) : (
   <button
@@ -1498,8 +1514,8 @@ const addToChatHistory = () => {
   >
     ➕ Add Friend
   </button>
-)} 
-
+)}
+  
         {/* BLOCK */}
         <button
           onClick={() => {
@@ -1516,7 +1532,22 @@ const addToChatHistory = () => {
         >
           🚫 Block
         </button>
-
+       {/* REPORT */}
+<button
+  onClick={() => {
+    setReportUserId(historyProfile.userId);
+    setHistoryProfile(null);
+    setReportReason("");
+    setShowReport(true);
+  }}
+  className={`w-full py-2.5 rounded-xl font-semibold transition ${
+    isDark
+      ? "bg-gray-800 hover:bg-gray-700 text-yellow-400"
+      : "bg-gray-100 hover:bg-gray-200 text-yellow-600"
+  }`}
+>
+  ⚠️ Report
+</button>
       </div>
     </div>
   </div>
@@ -1570,10 +1601,26 @@ const addToChatHistory = () => {
 
                   socket.emit("reportUser", {
                     reason: reportReason,
+                   ...(reportUserId ? { reportedUserId: reportUserId } : {}), 
                   });
+                 if (reportUserId) {
+  setChatHistory((prev) => {
+    const updated = prev.filter(
+      (item) => item.userId !== reportUserId
+    );
 
-                  setShowReport(false);
-                  setReportReason("");
+    localStorage.setItem(
+      "chatstranger_history",
+      JSON.stringify(updated)
+    );
+
+    return updated;
+  });
+}
+
+setShowReport(false);
+setReportReason("");
+setReportUserId(null);
                 }}
                 className="flex-1 bg-yellow-600 rounded-full py-2"
               >

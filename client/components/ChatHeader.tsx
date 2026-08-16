@@ -4,7 +4,6 @@ import { useState } from "react";
 import Image from "next/image";
 type ChatHeaderProps = {
   status: string;
-  onReport: () => void;
   profile: {
     name: string;
     image: string;
@@ -25,7 +24,6 @@ type ChatHeaderProps = {
 
 export default function ChatHeader({
   status,
-  onReport,
   profile,
   onProfileClick,
   onFriendsClick,
@@ -152,18 +150,7 @@ export default function ChatHeader({
         </button>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            onClick={onReport}
-            disabled={status !== "Connected"}
-            className={`px-3 py-2 rounded-full text-sm font-semibold transition shrink-0 ${
-              status === "Connected"
-                ? "bg-yellow-600 hover:bg-yellow-700"
-                : `${isDark ? "bg-gray-700" : "bg-gray-200"} opacity-50 cursor-not-allowed`
-            }`}
-          >
-            Report
-          </button>
-
+          
           {/* AVATAR + NAME — opens the profile card, same as before */}
           <button
             onClick={onProfileClick}

@@ -549,57 +549,101 @@ export default function registerSocketEvents(io) {
         });
 
         // REPORT USER
-        socket.on("reportUser", ({ reason }) => {
+socket.on("reportUser", ({ reason, reportedUserId }) => {
 
-            const room = userRooms.get(socket.id);
+    if (!socket.userId) {
+        return;
+    }
 
-            if (!room) {
-                return;
+    // HISTORY REPORT
+// Used when reporting someone from Chat History.
+if (reportedUserId) {
+
+    console.log(
+        "HISTORY REPORT:",
+        {
+            reporter: socket.userId,
+            reportedUserId,
+            reason,
+        }
+    );
+
+    // Find the reported user's active socket, if they are online.
+    let reportedSocket = null;
+
+    for (const [socketId, connectedSocket] of io.sockets.sockets) {
+        if (connectedSocket.userId === reportedUserId) {
+            reportedSocket = connectedSocket;
+            break;
+        }
+    }
+
+    // If the user is currently online, notify them.
+    // We do NOT affect the reporter's current chat.
+    if (reportedSocket) {
+        reportedSocket.emit("reportReceived");
+    }
+
+    // Tell the reporter the report was accepted.
+    socket.emit("reportSubmitted");
+
+    return;
+}
+
+    // CURRENT STRANGER REPORT
+    const room = userRooms.get(socket.id);
+
+    if (!room) {
+        return;
+    }
+
+    const roomData = getRoom(room);
+
+    let reportedUser = null;
+
+    if (roomData) {
+
+        reportedUser = roomData.users.find(
+            (user) => user !== socket.id
+        );
+
+        console.log(
+            "REPORT:",
+            {
+                reporter: socket.id,
+                reportedUser,
+                reason,
+            }
+        );
+
+        if (reportedUser) {
+
+            const reportedSocket =
+                io.sockets.sockets.get(reportedUser);
+
+            if (reportedSocket) {
+                reportedSocket.emit("strangerDisconnected");
             }
 
-            const roomData = getRoom(room);
+        }
 
-            let reportedUser = null;
+    }
 
-            if (roomData) {
+    socket.emit("reportSubmitted");
+    socket.emit("strangerDisconnected");
 
-                reportedUser = roomData.users.find(
-                    (user) => user !== socket.id
-                );
+    if (roomData) {
 
-                console.log(
-                    "REPORT:",
-                    { reporter: socket.id, reportedUser, reason }
-                );
-
-                if (reportedUser) {
-
-                    const reportedSocket =
-                        io.sockets.sockets.get(reportedUser);
-
-                    if (reportedSocket) {
-                        reportedSocket.emit("strangerDisconnected");
-                    }
-
-                }
-
-            }
-
-            socket.emit("reportSubmitted");
-            socket.emit("strangerDisconnected");
-
-            if (roomData) {
-
-                roomData.users.forEach((user) => {
-                    userRooms.delete(user);
-                });
-
-            }
-
-            removeRoom(room);
-            roomSharedTags.delete(room);
-
+        roomData.users.forEach((user) => {
+            userRooms.delete(user);
         });
+
+    }
+
+    removeRoom(room);
+    roomSharedTags.delete(room);
+
+});
 
         // NEXT STRANGER
         socket.on("nextStranger", async () => {
