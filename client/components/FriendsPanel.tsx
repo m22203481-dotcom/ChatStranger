@@ -49,6 +49,7 @@ export default function FriendsPanel({
 }: FriendsPanelProps) {
   const [draft, setDraft] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [openMenuFor, setOpenMenuFor] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,6 +61,28 @@ export default function FriendsPanel({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeFriendChat?.messages, activeFriendChat?.conversationId]);
+
+useEffect(() => {
+  if (!showEmojiPicker) return;
+
+  const handleOutsideClick = (event: MouseEvent) => {
+    const target = event.target as Node;
+
+    if (
+      emojiPickerRef.current &&
+      !emojiPickerRef.current.contains(target)
+    ) {
+      setShowEmojiPicker(false);
+    }
+  };
+
+  document.addEventListener("click", handleOutsideClick);
+
+  return () => {
+    document.removeEventListener("click", handleOutsideClick);
+  };
+}, [showEmojiPicker]);
+
 
   if (!isOpen) return null;
 
@@ -252,35 +275,43 @@ export default function FriendsPanel({
                   }`}
                 />
 
+               {/* EMOJI BUTTON + PICKER */}
+<div ref={emojiPickerRef}>
+  {/* EMOJI BUTTON */}
+  <button
+    type="button"
+    onClick={(e) => {
+      e.preventDefault();
+      e.currentTarget.blur();
+      setShowEmojiPicker((prev) => !prev);
+    }}
+    aria-label="Open emoji picker"
+    title="Emoji"
+    className={`absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full text-xl transition ${
+      isDark
+        ? "hover:bg-gray-700 text-gray-300"
+        : "hover:bg-gray-200 text-gray-600"
+    }`}
+  >
+    😊
+  </button>
 
-                 {/* EMOJI BUTTON */}
-                <button
-                 type="button"
-                onClick={() => setShowEmojiPicker((prev) => !prev)}
-                 aria-label="Open emoji picker"
-                 title="Emoji"
-                 className={`absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full text-xl transition ${
-                 isDark
-                 ? "hover:bg-gray-700 text-gray-300"
-                 : "hover:bg-gray-200 text-gray-600"
-                 }`}
-                  >
-                  😊
-                </button>
-
-                 {/* EMOJI PICKER */}
-                 {showEmojiPicker && (
-                <div className="absolute bottom-14 left-0 z-50">
-                <EmojiPicker
-                   onEmojiClick={handleEmojiClick}
-                    theme={isDark ? Theme.DARK : Theme.LIGHT}
-                    width={320}
-                    height={400}
-                    searchDisabled={false}
-                    skinTonesDisabled={false}
-                    />
-               </div>
-                )}
+  {/* EMOJI PICKER */}
+  {showEmojiPicker && (
+    <div className="absolute bottom-14 left-0 z-50">
+      <EmojiPicker
+        onEmojiClick={handleEmojiClick}
+        theme={isDark ? Theme.DARK : Theme.LIGHT}
+        width={320}
+        height={400}
+        searchDisabled={false}
+        skinTonesDisabled={false}
+        autoFocusSearch={false}
+      />
+    </div>
+  )}
+</div>
+                 
                 <button
                   onClick={() => {
                     if (!isPremium) {

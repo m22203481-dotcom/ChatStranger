@@ -59,6 +59,7 @@ export default function ChatPage() {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
   const [historyProfile, setHistoryProfile] = useState<ChatHistoryItem | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [status, setStatus] = useState("Searching...");
@@ -82,7 +83,26 @@ export default function ChatPage() {
     console.error("Failed to load chat history:", error);
   }
 }, []);
-   
+   useEffect(() => {
+  if (!showEmojiPicker) return;
+
+  const handleOutsideClick = (event: PointerEvent) => {
+    const target = event.target as Node;
+
+    if (
+      emojiPickerRef.current &&
+      !emojiPickerRef.current.contains(target)
+    ) {
+      setShowEmojiPicker(false);
+    }
+  };
+
+  document.addEventListener("pointerdown", handleOutsideClick);
+
+  return () => {
+    document.removeEventListener("pointerdown", handleOutsideClick);
+  };
+}, [showEmojiPicker]);
 
   // Interest-based matching
   const [interestInput, setInterestInput] = useState("");
@@ -1269,8 +1289,9 @@ const addToChatHistory = () => {
               <button
                 key={`${item.userId}-${item.timestamp}`}
                 onClick={() => {
-  setHistoryProfile(item);
-}}
+               friends.loadFriendsList();   
+               setHistoryProfile(item);
+                }}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition ${
                   isDark
                     ? "hover:bg-gray-900"
@@ -1832,37 +1853,48 @@ const addToChatHistory = () => {
                   : "bg-gray-100 text-black placeholder-gray-400 border-gray-300"
               }`}
             />
-            {/* EMOJI BUTTON */}
-<button
-  type="button"
-  onClick={() => setShowEmojiPicker((prev) => !prev)}
-  disabled={status !== "Connected"}
-  aria-label="Open emoji picker"
-  title="Emoji"
-  className={`absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full text-xl transition ${
-    status === "Connected"
-      ? isDark
-        ? "hover:bg-gray-700 text-gray-300"
-        : "hover:bg-gray-200 text-gray-600"
-      : "text-gray-600 cursor-not-allowed"
-  }`}
+            {/* EMOJI BUTTON + PICKER */}
+<div
+  ref={emojiPickerRef}
+  className="conyents"
 >
-  😊
-</button>
+  {/* EMOJI BUTTON */}
+  <button
+    type="button"
+    onClick={(e) => {
+      e.preventDefault();
+      e.currentTarget.blur();
+      setShowEmojiPicker((prev) => !prev);
+    }}
+    disabled={status !== "Connected"}
+    aria-label="Open emoji picker"
+    title="Emoji"
+    className={`absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full text-xl transition ${
+      status === "Connected"
+        ? isDark
+          ? "hover:bg-gray-700 text-gray-300"
+          : "hover:bg-gray-200 text-gray-600"
+        : "text-gray-600 cursor-not-allowed"
+    }`}
+  >
+    😊
+  </button>
 
-{/* EMOJI PICKER */}
-{showEmojiPicker && status === "Connected" && (
-  <div className="absolute bottom-14 left-0 z-50">
-    <EmojiPicker
-      onEmojiClick={handleEmojiClick}
-     theme={isDark ? Theme.DARK : Theme.LIGHT} 
-      width={320}
-      height={400}
-      searchDisabled={false}
-      skinTonesDisabled={false}
-    />
-  </div>
-)}
+  {/* EMOJI PICKER */}
+  {showEmojiPicker && status === "Connected" && (
+    <div className="absolute bottom-14 left-0 z-50">
+      <EmojiPicker
+        onEmojiClick={handleEmojiClick}
+        theme={isDark ? Theme.DARK : Theme.LIGHT}
+        width={320}
+        height={400}
+        searchDisabled={false}
+        skinTonesDisabled={false}
+        autoFocusSearch={false}
+      />
+    </div>
+  )}
+</div>
             <button
               onClick={() => {
                 if (!isPremium) {
