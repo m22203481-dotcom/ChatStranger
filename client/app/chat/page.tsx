@@ -1451,18 +1451,33 @@ const addToChatHistory = () => {
       {/* ACTIONS */}
       <div className="mt-5 space-y-2">
 
-        {/* ADD FRIEND */}
-        <button
-          onClick={() => {
-            friends.sendFriendRequestToUser(
-              historyProfile.userId
-            );
-            setHistoryProfile(null);
-          }}
-          className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
-        >
-          ➕ Add Friend
-        </button>
+       {/* ADD FRIEND / ALREADY FRIENDS */}
+{friends.friends.some(
+  (friend) => friend.userId === historyProfile.userId
+) ? (
+  <button
+    disabled
+    className={`w-full py-2.5 rounded-xl font-semibold cursor-default ${
+      isDark
+        ? "bg-gray-800 text-green-400"
+        : "bg-gray-100 text-green-600"
+    }`}
+  >
+    ✓ Friends
+  </button>
+) : (
+  <button
+    onClick={() => {
+      friends.sendFriendRequestToUser(
+        historyProfile.userId
+      );
+      setHistoryProfile(null);
+    }}
+    className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition"
+  >
+    ➕ Add Friend
+  </button>
+)} 
 
         {/* BLOCK */}
         <button
